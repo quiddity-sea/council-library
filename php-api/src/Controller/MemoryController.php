@@ -155,4 +155,51 @@ class MemoryController
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($status);
     }
+
+    /**
+     * Dynamic PUT handler for plugin-generated paths:
+     *   /sanctum/memory/session_summaries/{key}
+     *   /sanctum/memory/delegation_log/{key}
+     *   /sanctum/memory/compression_snapshots/{key}
+     *   /sanctum/memory/hermes_builtin/{action}
+     */
+    public function putDynamic(Request $request, Response $response, array $args): Response
+    {
+        $agent = $request->getAttribute('agent_slug');
+        $body = $request->getParsedBody();
+        $prefix = $args['prefix'] ?? 'general';
+        $key = $args['key'] ?? 'unknown';
+        $ns = $prefix;
+
+        // hermes_builtin uses {action} as key, namespace='hermes_builtin'
+        if (isset($args['action'])) {
+            $ns = 'hermes_builtin';
+            $key = $args['action'];
+        }
+
+        $content = $body['content'] ?? json_encode($body);
+        $importance = $body['importance'] ?? 30;
+        $sourceType = $body['source_type'] ?? 'session_extraction';
+
+        $stmt = $this->pdo->prepare(
+            "INSERT INTO memory_lore
+             (agent_slug, namespace, key_name, content_json, content_text,
+              source_type, importance, tags)
+             VALUES (:agent, :ns, :key, :json, :text, :source, :imp, :tags)
+             ON DUPLICATE KEY UPDATE
+               content_json = VALUES(content_json),
+               content_text = VALUES(content_text),
+               importance = VALUES(importance),
+               updated_at = NOW()"
+        );
+        $stmt->execute([
+            'agent' => $agent, 'ns' => $ns, 'key' => $key,
+            'json' => json_encode(['raw' => $content]),
+            'text' => is_string($content) ? $content : json_encode($content),
+            'source' => $sourceType, 'imp' => $importance,
+            'tags' => json_encode($body['tags'] ?? []),
+        ]);
+
+        return $this->json($response, ['success' => true, 'upserted' => true]);
+    }
 }

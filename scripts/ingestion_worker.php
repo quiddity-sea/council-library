@@ -1,0 +1,124 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Ingestion Worker — background processor for Quiddity Commons indexing.
+ * Blueprint §4.3. Polls quiddity_files for pending items, chunks them,
+ * and marks them indexed. Runs indefinitely or processes a batch and exits.
+ *
+ * Usage: php ingestion_worker.php [--once] [--concurrency=3]
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/../php-api/vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../php-api');
+$dotenv->safeLoad();
+
+$host = $_ENV['DB_HOST'] ?? 'localhost';
+$user = $_ENV['DB_USER'] ?? 'zeon7_user';
+$pass = $_ENV['DB_PASS'] ?? '';
+$loreSea = $_ENV['QUIDDITY_ROOT'] ?? '/foreverbox_data/Quiddity_Lore_Sea';
+
+$once = in_array('--once', $argv);
+$concurrency = 3;
+
+$pdo = new PDO(
+    "mysql:host={$host};dbname=quiddity_commons;charset=utf8mb4",
+    $user, $pass,
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+);
+
+echo "Ingestion Worker started (pid " . getmypid() . ")\n";
+
+while (true) {
+    // Find pending files
+    $stmt = $pdo->query(
+        "SELECT id, relative_path FROM quiddity_files
+         WHERE indexing_status IN ('pending', 'processing')
+         ORDER BY last_modified ASC LIMIT 10"
+    );
+    $files = $stmt->fetchAll();
+
+    if (empty($files)) {
+        if ($once) break;
+        echo "No pending files. Sleeping 30s...\n";
+        sleep(30);
+        continue;
+    }
+
+    foreach ($files as $file) {
+        $filePath = "{$loreSea}/{$file['relative_path']}";
+        if (!file_exists($filePath)) {
+            $pdo->prepare("UPDATE quiddity_files SET indexing_status='failed', error_message='File not found' WHERE id=?")
+                ->execute([$file['id']]);
+            echo "  SKIP {$file['relative_path']}: not found\n";
+            continue;
+        }
+
+        // Mark processing
+        $pdo->prepare("UPDATE quiddity_files SET indexing_status='processing' WHERE id=?")
+            ->execute([$file['id']]);
+
+        $content = file_get_contents($filePath);
+        $chunks = chunkText($content);
+
+        echo "  {$file['relative_path']}: {$file['id']} — " . count($chunks) . " chunks\n";
+
+        // Clear old chunks
+        $pdo->prepare("DELETE FROM quiddity_vector_references WHERE file_id=?")
+            ->execute([$file['id']]);
+
+        // Store chunks (FULLTEXT only — embeddings require an embedding service)
+        $insertStmt = $pdo->prepare(
+            "INSERT INTO quiddity_vector_references
+             (file_id, chunk_index, chunk_text, chunk_token_count, chunk_metadata)
+             VALUES (?, ?, ?, ?, ?)"
+        );
+        foreach ($chunks as $i => $chunk) {
+            $tokenCount = str_word_count($chunk['text']);
+            $insertStmt->execute([
+                $file['id'], $i, $chunk['text'], $tokenCount,
+                json_encode($chunk['metadata']),
+            ]);
+        }
+
+        // Mark indexed
+        $pdo->prepare(
+            "UPDATE quiddity_files SET indexing_status='indexed', indexed_at=NOW() WHERE id=?"
+        )->execute([$file['id']]);
+    }
+
+    if ($once) break;
+    sleep(5);
+}
+
+echo "Ingestion Worker finished.\n";
+
+// ── Chunker ──────────────────────────────────────────────────
+
+function chunkText(string $text, int $maxTokens = 512, int $overlap = 64): array
+{
+    $paragraphs = preg_split('/\n\n+/', $text);
+    $chunks = [];
+
+    foreach ($paragraphs as $para) {
+        $para = trim($para);
+        if (empty($para)) continue;
+
+        $words = explode(' ', $para);
+        if (count($words) <= $maxTokens) {
+            $chunks[] = ['text' => $para, 'metadata' => []];
+            continue;
+        }
+
+        // Split long paragraphs
+        for ($i = 0; $i < count($words); $i += $maxTokens - $overlap) {
+            $slice = array_slice($words, $i, $maxTokens);
+            if (empty($slice)) break;
+            $chunks[] = ['text' => implode(' ', $slice), 'metadata' => []];
+        }
+    }
+
+    return $chunks;
+}

@@ -59,6 +59,12 @@ $app->group('/v1/sanctum', function (RouteCollectorProxy $s) {
     $s->put('/memory/{ns}/{key}', c(MemoryController::class, 'upsert'));
     $s->delete('/memory/{ns}/{key}', c(MemoryController::class, 'delete'));
 
+    // Dynamic plugin paths
+    $s->put('/memory/session_summaries/{key}', c(MemoryController::class, 'putDynamic'));
+    $s->put('/memory/delegation_log/{key}', c(MemoryController::class, 'putDynamic'));
+    $s->put('/memory/compression_snapshots/{key}', c(MemoryController::class, 'putDynamic'));
+    $s->put('/memory/hermes_builtin/{action}', c(MemoryController::class, 'putDynamic'));
+
     $s->get('/conversations', c(ConversationController::class, 'list'));
     $s->get('/conversations/{sid}', c(ConversationController::class, 'get'));
     $s->post('/conversations', c(ConversationController::class, 'create'));
