@@ -45,11 +45,15 @@ agent_overrides:
     layer_2_analytical_engine:
       model: "deepseek/deepseek-v4-flash"
   producer:
+    layer_1_intuitive_reflex:
+      model: "deepseek/deepseek-v4-flash"
     layer_2_analytical_engine:
       model: "qwen/qwen3-coder"
   coach:
     layer_2_analytical_engine:
       model: "deepseek/deepseek-v4-flash"
   director:
+    layer_1_intuitive_reflex:
+      model: "deepseek/deepseek-v4-flash"
     layer_2_analytical_engine:
       model: "nvidia/nemotron-3-super-120b-a12b:free"
