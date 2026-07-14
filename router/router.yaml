@@ -68,4 +68,4 @@ wolf_overrides:
   layer_2_analytical_engine:
     model: "deepseek/deepseek-v4-flash"
   layer_3_deep_architect:
-    model: "deepseek/deepseek-v4-pro"
+    model: "deepseek/deepseek-v4-flash"
