@@ -22,6 +22,7 @@ $loreSea = $_ENV['QUIDDITY_ROOT'] ?? '/foreverbox_data/Quiddity_Lore_Sea';
 
 $once = in_array('--once', $argv);
 $concurrency = 3;
+$embeddingUrl = $_ENV['EMBEDDING_URL'] ?? 'http://127.0.0.1:8900';
 
 $pdo = new PDO(
     "mysql:host={$host};dbname=quiddity_commons;charset=utf8mb4",
@@ -69,17 +70,22 @@ while (true) {
         $pdo->prepare("DELETE FROM quiddity_vector_references WHERE file_id=?")
             ->execute([$file['id']]);
 
-        // Store chunks (FULLTEXT only — embeddings require an embedding service)
+        // Store chunks with embeddings if available
         $insertStmt = $pdo->prepare(
             "INSERT INTO quiddity_vector_references
-             (file_id, chunk_index, chunk_text, chunk_token_count, chunk_metadata)
-             VALUES (?, ?, ?, ?, ?)"
+             (file_id, chunk_index, chunk_text, chunk_token_count, chunk_metadata, embedding)
+             VALUES (?, ?, ?, ?, ?, ?)"
         );
+
+        // Try to get embeddings in batch
+        $embeddings = getEmbeddings(array_column($chunks, 'text'), $embeddingUrl);
+
         foreach ($chunks as $i => $chunk) {
             $tokenCount = str_word_count($chunk['text']);
+            $emb = $embeddings[$i] ?? null;
             $insertStmt->execute([
                 $file['id'], $i, $chunk['text'], $tokenCount,
-                json_encode($chunk['metadata']),
+                json_encode($chunk['metadata']), $emb,
             ]);
         }
 
@@ -94,6 +100,34 @@ while (true) {
 }
 
 echo "Ingestion Worker finished.\n";
+
+// ── Embedding helper ───────────────────────────────────────
+
+function getEmbeddings(array $texts, string $url): array
+{
+    if (empty($texts)) return [];
+
+    try {
+        $ch = curl_init($url . '/embed');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode(['texts' => $texts]),
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 60,
+        ]);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        if (!$response) return [];
+
+        $data = json_decode($response, true);
+        return array_map(fn(string $hex) => hex2bin($hex), $data['embeddings'] ?? []);
+
+    } catch (\Throwable $e) {
+        return [];
+    }
+}
 
 // ── Chunker ──────────────────────────────────────────────────
 

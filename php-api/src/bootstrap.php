@@ -53,6 +53,11 @@ $builder->addDefinitions([
         $pdo->exec('USE quiddity_commons');
         return new \CouncilLibrary\Service\VectorSearch($pdo);
     },
+
+    \CouncilLibrary\Service\EmbeddingClient::class => function (): \CouncilLibrary\Service\EmbeddingClient {
+        $url = $_ENV['EMBEDDING_URL'] ?? 'http://127.0.0.1:8900';
+        return new \CouncilLibrary\Service\EmbeddingClient($url);
+    },
 ]);
 
 $container = $builder->build();
