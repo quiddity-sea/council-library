@@ -42,16 +42,14 @@ router:
 
 agent_overrides:
   curator:
-    layer_3_deep_architect:
-      model: "nous/hermes-3-70b"
+    layer_2_analytical_engine:
+      model: "deepseek/deepseek-v4-fast"
   producer:
     layer_2_analytical_engine:
       model: "qwen/qwen3-coder"
-    layer_3_deep_architect:
-      model: "deepseek/deepseek-v4-pro"
   coach:
     layer_2_analytical_engine:
-      model: "anthropic/claude-sonnet-4"
+      model: "deepseek/deepseek-v4-fast"
   director:
-    layer_3_deep_architect:
-      model: "deepseek/deepseek-v4-pro"
+    layer_2_analytical_engine:
+      model: "nvidia/nemotron-super"
