@@ -33,32 +33,51 @@ class VectorSearch
             return $this->fulltextSearch($query, $limit);
         }
 
-        // Use vector index for approximate nearest-neighbour search.
-        // MariaDB 11.8 computes distance through the HNSW index, not a
-        // standalone function. The VECTOR INDEX on embedding enables
-        // ORDER BY with implicit distance ordering.
-        try {
-            $stmt = $this->pdo->prepare(
-                "SELECT qvr.id, qvr.chunk_text, qvr.chunk_index,
-                        qf.relative_path, qf.id as file_id
-                 FROM quiddity_vector_references qvr
-                 JOIN quiddity_files qf ON qf.id = qvr.file_id
-                 WHERE qvr.embedding IS NOT NULL
-                 ORDER BY qvr.embedding <-> :vec
-                 LIMIT {$limit}"
-            );
-            $stmt->execute(['vec' => $queryVec]);
-            $rows = $stmt->fetchAll();
+        // MariaDB 11.8 Community (Ubuntu) has VECTOR storage but no
+        // VECTOR_DISTANCE function. Load candidates and compute similarity
+        // in PHP using dot product on normalized vectors.
+        $stmt = $this->pdo->query(
+            "SELECT qvr.id, qvr.chunk_text, qvr.chunk_index,
+                    qf.relative_path, qf.id as file_id, HEX(qvr.embedding) as emb_hex
+             FROM quiddity_vector_references qvr
+             JOIN quiddity_files qf ON qf.id = qvr.file_id
+             WHERE qvr.embedding IS NOT NULL
+             LIMIT 200"
+        );
+        $candidates = $stmt->fetchAll();
 
-            // Add a placeholder similarity score
-            return array_map(function($row) {
-                $row['similarity'] = 'vector';
-                return $row;
-            }, $rows ?: []);
-
-        } catch (\PDOException $e) {
-            return $this->fulltextSearch($query, $limit);
+        if (empty($candidates)) {
+            return [];
         }
+
+        // Compute cosine similarity (dot product for L2-normalized vectors)
+        $queryFloats = self::bytesToFloats($queryVec);
+        $scored = [];
+        foreach ($candidates as $row) {
+            $candFloats = self::bytesToFloats(hex2bin($row['emb_hex']));
+            $row['similarity'] = self::dotProduct($queryFloats, $candFloats);
+            $scored[] = $row;
+        }
+
+        // Sort by similarity descending
+        usort($scored, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
+
+        return array_slice($scored, 0, $limit);
+    }
+
+    private static function bytesToFloats(string $bytes): array
+    {
+        return array_values(unpack('f*', $bytes));
+    }
+
+    private static function dotProduct(array $a, array $b): float
+    {
+        $sum = 0.0;
+        $n = min(count($a), count($b));
+        for ($i = 0; $i < $n; $i++) {
+            $sum += $a[$i] * $b[$i];
+        }
+        return $sum;
     }
 
     private function fulltextSearch(string $query, int $limit): array
