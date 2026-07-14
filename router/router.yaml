@@ -19,7 +19,7 @@ model_profiles:
 
   system2_heavy:
     provider: "openrouter"
-    model: "nvidia/nemotron-3-ultra"
+    model: "deepseek/deepseek-v4-pro"
     max_tokens: 131072
     temperature: 0.1
     tags: ["architect", "heavy_reasoning", "planning", "cloud"]
