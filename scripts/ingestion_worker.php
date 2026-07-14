@@ -15,14 +15,12 @@ require __DIR__ . '/../php-api/vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../php-api');
 $dotenv->safeLoad();
 
-$host = $_ENV['DB_HOST'] ?? 'localhost';
-$user = $_ENV['DB_USER'] ?? 'zeon7_user';
-$pass = $_ENV['DB_PASS'] ?? '';
-$loreSea = $_ENV['QUIDDITY_ROOT'] ?? '/foreverbox_data/Quiddity_Lore_Sea';
-
+$host = getenv('DB_HOST') ?: 'localhost';
+$user = getenv('DB_USER') ?: 'zeon7_user';
+$pass = getenv('DB_PASS') ?: '';
+$loreSea = getenv('QUIDDITY_ROOT') ?: '/foreverbox_data/Quiddity_Lore_Sea';
+$embeddingUrl = getenv('EMBEDDING_URL') ?: 'http://127.0.0.1:8900';
 $once = in_array('--once', $argv);
-$concurrency = 3;
-$embeddingUrl = $_ENV['EMBEDDING_URL'] ?? 'http://127.0.0.1:8900';
 
 $pdo = new PDO(
     "mysql:host={$host};dbname=quiddity_commons;charset=utf8mb4",
@@ -50,6 +48,12 @@ while (true) {
 
     foreach ($files as $file) {
         $filePath = "{$loreSea}/{$file['relative_path']}";
+        // Skip Windows Zone.Identifier junk
+        if (str_contains($file['relative_path'], ':Zone.Identifier')) {
+            $pdo->prepare("UPDATE quiddity_files SET indexing_status='failed', error_message='Windows ADS metadata — skipped' WHERE id=?")
+                ->execute([$file['id']]);
+            continue;
+        }
         if (!file_exists($filePath)) {
             $pdo->prepare("UPDATE quiddity_files SET indexing_status='failed', error_message='File not found' WHERE id=?")
                 ->execute([$file['id']]);
