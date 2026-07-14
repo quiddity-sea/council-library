@@ -64,15 +64,15 @@ def main():
         # Mean-pool embeddings
         vectors = [vector_from_blob(r[0]) for r in rows]
         centroid = np.mean(vectors, axis=0)
-        blob = vector_to_blob(centroid)
+        centroid_hex = centroid.astype(np.float32).tobytes().hex()
 
         cursor.execute(
             "INSERT INTO quiddity_folder_centroids "
             "(folder_name, centroid, sample_count) "
-            "VALUES (%s, %s, %s) "
-            "ON DUPLICATE KEY UPDATE centroid=VALUES(centroid), "
+            "VALUES (%s, UNHEX(%s), %s) "
+            "ON DUPLICATE KEY UPDATE centroid=UNHEX(VALUES(centroid)), "
             "sample_count=VALUES(sample_count), rebuilt_at=NOW()",
-            (folder, blob, len(rows)),
+            (folder, centroid_hex, len(rows)),
         )
         conn.commit()
         print(f"  {folder}: centroid built from {len(rows)} chunks")

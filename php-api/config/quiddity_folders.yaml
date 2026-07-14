@@ -1,24 +1,81 @@
-# Quiddity Folder Catalogue
-# Council Library V3.0 — maintained via FolderController
-# Source of truth for the content-based router (§4.6)
-# Adding a folder here requires rebuilding centroids afterward.
+# Quiddity Lore Sea Folder Catalogue
+# Council Library V3.0 — §4.5
+#
+# Each folder maps to a subdirectory of /foreverbox_data/Quiddity_Lore_Sea/
+# Keywords are used by FolderRouter for content-based classification.
 
 folders:
   "01_TheForeverbox_Mythos":
-    purpose: "Core cosmology, Quantum Lattice theory, Iterations lore"
-    created_at: "2025-01-01T00:00:00Z"
+    keywords:
+      - foreverbox
+      - mythos
+      - ur-myth
+      - pillar
+      - eden
+      - merrill
+      - progenitor
+      - protocol
+      - foundation
+    purpose: "Foundational myths, canon documents, The Foreverbox story"
   "02_ReInvigor_Texts":
-    purpose: "ReInvigor technical architecture, client specs, project docs"
-    created_at: "2025-01-01T00:00:00Z"
+    keywords:
+      - reinvigor
+      - client
+      - spec
+      - requirements
+      - brief
+      - scope
+      - contract
+      - deliverable
+      - council
+      - library
+      - sovereign
+    purpose: "ReInvigor client specs and project documentation"
   "03_TheInitiative_Audio":
-    purpose: "Music production, stem maps, lyric sheets, video scripts"
-    created_at: "2025-01-01T00:00:00Z"
+    keywords:
+      - audio
+      - music
+      - stem
+      - production
+      - mix
+      - lyric
+      - video
+      - script
+      - release
+      - initiative
+    purpose: "Music production, stems, lyrics, video scripts"
   "04_FromTheNoise_Archives":
-    purpose: "Published articles, editorial guidelines, research dossiers"
-    created_at: "2025-01-01T00:00:00Z"
+    keywords:
+      - ftn
+      - from the noise
+      - editorial
+      - article
+      - research
+      - handbook
+      - publication
+    purpose: "Published articles, editorial guidelines, research"
   "05_Agent_Profiles":
-    purpose: "SOUL.md, USER.md, agent biographies, profile sheets"
-    created_at: "2025-01-01T00:00:00Z"
+    keywords:
+      - zeon7
+      - leon
+      - gemma
+      - otec
+      - agent
+      - biography
+      - profile
+      - soul
+      - user
+    purpose: "Agent profiles, biographies, SOUL.md mirrors"
   "06_QuiddityLtd_Dev_Specs":
-    purpose: "API contracts, database schemas, infrastructure docs"
-    created_at: "2025-01-01T00:00:00Z"
+    keywords:
+      - blueprint
+      - architecture
+      - schema
+      - api
+      - database
+      - sql
+      - infrastructure
+      - spec
+      - technical
+      - vector
+    purpose: "API contracts, database schemas, infrastructure"

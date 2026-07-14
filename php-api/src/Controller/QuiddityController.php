@@ -102,7 +102,7 @@ class QuiddityController
         $errorCount     = 0;
         $synced         = [];
         $errors         = [];
-        $router         = $organise ? new FolderRouter() : null;
+        $router         = $organise ? new FolderRouter(pdo: $this->pdo) : null;
 
         foreach ($files as $fullPath) {
             if (!file_exists($fullPath) || !is_file($fullPath)) {
@@ -124,21 +124,22 @@ class QuiddityController
             $existing = $ck->fetch();
 
             if ($existing) {
-                if ($existing['content_hash'] === $contentHash) {
-                    $unchangedCount++;
-                    $synced[] = ['path' => $relativePath, 'status' => 'unchanged', 'file_id' => (int) $existing['id']];
-                    continue;
-                }
-                // Content changed — reset to pending for re-ingestion
-                $this->pdo->prepare(
-                    "UPDATE quiddity_files
-                     SET content_hash = :h, file_size_bytes = :s, last_modified = :m,
-                         indexing_status = 'pending', indexed_at = NULL, error_message = NULL
-                     WHERE id = :id"
-                )->execute(['h' => $contentHash, 's' => $fileSize, 'm' => $lastModified, 'id' => $existing['id']]);
                 $fileId = (int) $existing['id'];
-                $changedCount++;
-                $synced[] = ['path' => $relativePath, 'status' => 'changed', 'file_id' => $fileId];
+                if ($existing['content_hash'] === $contentHash) {
+                    $status = 'unchanged';
+                    $unchangedCount++;
+                } else {
+                    // Content changed — reset to pending for re-ingestion
+                    $this->pdo->prepare(
+                        "UPDATE quiddity_files
+                         SET content_hash = :h, file_size_bytes = :s, last_modified = :m,
+                             indexing_status = 'pending', indexed_at = NULL, error_message = NULL
+                         WHERE id = :id"
+                    )->execute(['h' => $contentHash, 's' => $fileSize, 'm' => $lastModified, 'id' => $fileId]);
+                    $status = 'changed';
+                    $changedCount++;
+                }
+                $synced[] = ['path' => $relativePath, 'status' => $status, 'file_id' => $fileId];
             } else {
                 // New file
                 $this->pdo->prepare(
