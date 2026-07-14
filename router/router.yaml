@@ -2,7 +2,7 @@
 # Blueprint §5.3
 
 model_profiles:
-  system1_local:
+  layer_1_intuitive_reflex:
     provider: "ollama"
     model: "gemma4:31b"
     base_url: "http://localhost:11434"
@@ -10,14 +10,14 @@ model_profiles:
     temperature: 0.4
     tags: ["local", "private", "personality", "fast"]
 
-  system2_light:
+  layer_2_analytical_engine:
     provider: "openrouter"
     model: "qwen/qwen3-32b:free"
     max_tokens: 32768
     temperature: 0.2
     tags: ["reasoning", "coding", "cloud", "free_tier"]
 
-  system2_heavy:
+  layer_3_deep_architect:
     provider: "openrouter"
     model: "deepseek/deepseek-v4-pro"
     max_tokens: 131072
@@ -37,21 +37,21 @@ router:
     - "C:\\\\Users\\\\"
 
   daily_budget_tokens:
-    system2_heavy: 500000
-    system2_light: 2000000
+    layer_3_deep_architect: 500000
+    layer_2_analytical_engine: 2000000
 
 agent_overrides:
   curator:
-    system2_heavy:
+    layer_3_deep_architect:
       model: "nous/hermes-3-70b"
   producer:
-    system2_light:
+    layer_2_analytical_engine:
       model: "qwen/qwen3-coder"
-    system2_heavy:
+    layer_3_deep_architect:
       model: "deepseek/deepseek-v4-pro"
   coach:
-    system2_light:
+    layer_2_analytical_engine:
       model: "anthropic/claude-sonnet-4"
   director:
-    system2_heavy:
+    layer_3_deep_architect:
       model: "deepseek/deepseek-v4-pro"

@@ -36,9 +36,9 @@ REGISTRY_API_URL = os.environ.get("FOREVERBOX_API_URL", "http://localhost:8080/v
 
 
 class ModelTier(Enum):
-    SYSTEM1_LOCAL = "system1_local"
-    SYSTEM2_LIGHT = "system2_light"
-    SYSTEM2_HEAVY = "system2_heavy"
+    LAYER_1_INTUITIVE_REFLEX = "layer_1_intuitive_reflex"
+    LAYER_2_ANALYTICAL_ENGINE = "layer_2_analytical_engine"
+    LAYER_3_DEEP_ARCHITECT = "layer_3_deep_architect"
 
 
 @dataclass
@@ -80,9 +80,9 @@ class CognitiveRouter:
     }
 
     THRESHOLDS = {
-        ModelTier.SYSTEM1_LOCAL: 0.0,
-        ModelTier.SYSTEM2_LIGHT: 0.40,
-        ModelTier.SYSTEM2_HEAVY: 0.70,
+        ModelTier.LAYER_1_INTUITIVE_REFLEX: 0.0,
+        ModelTier.LAYER_2_ANALYTICAL_ENGINE: 0.40,
+        ModelTier.LAYER_3_DEEP_ARCHITECT: 0.70,
     }
 
     def __init__(self, config_path: str = None):
@@ -120,17 +120,17 @@ class CognitiveRouter:
         load = self.estimate_load(ctx)
 
         # Privacy: force local if private data present
-        if ctx.has_private_data and load >= self.THRESHOLDS[ModelTier.SYSTEM2_LIGHT]:
-            return self.profiles[ModelTier.SYSTEM1_LOCAL]
+        if ctx.has_private_data and load >= self.THRESHOLDS[ModelTier.LAYER_2_ANALYTICAL_ENGINE]:
+            return self.profiles[ModelTier.LAYER_1_INTUITIVE_REFLEX]
 
-        for tier in [ModelTier.SYSTEM2_HEAVY, ModelTier.SYSTEM2_LIGHT, ModelTier.SYSTEM1_LOCAL]:
+        for tier in [ModelTier.LAYER_3_DEEP_ARCHITECT, ModelTier.LAYER_2_ANALYTICAL_ENGINE, ModelTier.LAYER_1_INTUITIVE_REFLEX]:
             if load >= self.THRESHOLDS[tier] and self._is_healthy(tier):
                 # Budget gate for cloud tiers
-                if tier != ModelTier.SYSTEM1_LOCAL and not self._budget_available(tier):
+                if tier != ModelTier.LAYER_1_INTUITIVE_REFLEX and not self._budget_available(tier):
                     continue
                 return self._apply_override(tier, agent_slug)
 
-        return self.profiles[ModelTier.SYSTEM1_LOCAL]
+        return self.profiles[ModelTier.LAYER_1_INTUITIVE_REFLEX]
 
     def _apply_override(self, tier: ModelTier, agent_slug: str = None) -> ModelProfile:
         """Apply per-agent model overrides if configured."""
@@ -150,7 +150,7 @@ class CognitiveRouter:
         return profile
 
     def local_model_available(self) -> bool:
-        return self._is_healthy(ModelTier.SYSTEM1_LOCAL)
+        return self._is_healthy(ModelTier.LAYER_1_INTUITIVE_REFLEX)
 
     def scan_private(self, text: str) -> bool:
         for pattern in self._private_patterns:
@@ -200,7 +200,7 @@ class CognitiveRouter:
 
         healthy = False
         try:
-            if tier == ModelTier.SYSTEM1_LOCAL:
+            if tier == ModelTier.LAYER_1_INTUITIVE_REFLEX:
                 r = requests.get(f"{profile.base_url}/api/tags", timeout=2)
                 healthy = r.status_code == 200
             else:

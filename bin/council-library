@@ -184,11 +184,11 @@ def _install_budget():
     _run(
         f"mariadb -u {DB_USER} -p'{DB_PASS}' agent_registry -e "
         f"\"INSERT INTO token_budget_ledger (tier, usage_date, tokens_used, daily_limit) "
-        f"VALUES ('system2_heavy', CURDATE(), 0, 500000) "
-        f"ON DUPLICATE KEY UPDATE daily_limit=500000; "
+        f"VALUES ('layer_2_analytical_engine', CURDATE(), 0, 2000000) "
+        f"ON DUPLICATE KEY UPDATE daily_limit=2000000; "
         f"INSERT INTO token_budget_ledger (tier, usage_date, tokens_used, daily_limit) "
-        f"VALUES ('system2_light', CURDATE(), 0, 2000000) "
-        f"ON DUPLICATE KEY UPDATE daily_limit=2000000\""
+        f"VALUES ('layer_3_deep_architect', CURDATE(), 0, 500000) "
+        f"ON DUPLICATE KEY UPDATE daily_limit=500000\""
     )
 
 
