@@ -11,8 +11,16 @@ use Slim\Psr7\Response as SlimResponse;
 
 class Auth implements MiddlewareInterface
 {
+    private const PUBLIC_PATHS = ['/v1/healthz', '/v1/readyz'];
+
     public function process(Request $request, Handler $handler): Response
     {
+        $path = $request->getUri()->getPath();
+
+        // Skip auth for public health endpoints
+        if (in_array($path, self::PUBLIC_PATHS)) {
+            return $handler->handle($request);
+        }
         $authHeader = $request->getHeaderLine('Authorization');
 
         if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {

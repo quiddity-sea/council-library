@@ -1,0 +1,41 @@
+# Council Library — Cognitive Router Configuration
+# Blueprint §5.3
+
+model_profiles:
+  system1_local:
+    provider: "ollama"
+    model: "gemma4:31b"
+    base_url: "http://localhost:11434"
+    max_tokens: 8192
+    temperature: 0.4
+    tags: ["local", "private", "personality", "fast"]
+
+  system2_light:
+    provider: "openrouter"
+    model: "qwen/qwen3-32b:free"
+    max_tokens: 32768
+    temperature: 0.2
+    tags: ["reasoning", "coding", "cloud", "free_tier"]
+
+  system2_heavy:
+    provider: "openrouter"
+    model: "nvidia/nemotron-3-ultra"
+    max_tokens: 131072
+    temperature: 0.1
+    tags: ["architect", "heavy_reasoning", "planning", "cloud"]
+
+router:
+  enabled: true
+  privacy_scan_enabled: true
+  private_patterns:
+    - "api[_-]?key"
+    - "secret"
+    - "password"
+    - "token"
+    - "/home/"
+    - "/Users/"
+    - "C:\\\\Users\\\\"
+
+  daily_budget_tokens:
+    system2_heavy: 500000
+    system2_light: 2000000
