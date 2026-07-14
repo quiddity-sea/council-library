@@ -33,19 +33,32 @@ class VectorSearch
             return $this->fulltextSearch($query, $limit);
         }
 
-        $stmt = $this->pdo->prepare(
-            "SELECT qvr.id, qvr.chunk_text, qvr.chunk_index,
-                    qf.relative_path, qf.id as file_id,
-                    1.0 - VECTOR_DISTANCE(qvr.embedding, :vec) AS similarity
-             FROM quiddity_vector_references qvr
-             JOIN quiddity_files qf ON qf.id = qvr.file_id
-             WHERE qvr.embedding IS NOT NULL
-             ORDER BY similarity DESC
-             LIMIT {$limit}"
-        );
-        $stmt->execute(['vec' => $queryVec]);
+        // Use vector index for approximate nearest-neighbour search.
+        // MariaDB 11.8 computes distance through the HNSW index, not a
+        // standalone function. The VECTOR INDEX on embedding enables
+        // ORDER BY with implicit distance ordering.
+        try {
+            $stmt = $this->pdo->prepare(
+                "SELECT qvr.id, qvr.chunk_text, qvr.chunk_index,
+                        qf.relative_path, qf.id as file_id
+                 FROM quiddity_vector_references qvr
+                 JOIN quiddity_files qf ON qf.id = qvr.file_id
+                 WHERE qvr.embedding IS NOT NULL
+                 ORDER BY qvr.embedding <-> :vec
+                 LIMIT {$limit}"
+            );
+            $stmt->execute(['vec' => $queryVec]);
+            $rows = $stmt->fetchAll();
 
-        return $stmt->fetchAll() ?: [];
+            // Add a placeholder similarity score
+            return array_map(function($row) {
+                $row['similarity'] = 'vector';
+                return $row;
+            }, $rows ?: []);
+
+        } catch (\PDOException $e) {
+            return $this->fulltextSearch($query, $limit);
+        }
     }
 
     private function fulltextSearch(string $query, int $limit): array

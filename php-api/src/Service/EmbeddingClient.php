@@ -38,7 +38,17 @@ class EmbeddingClient
      */
     public function embed(array $texts): array
     {
-        if (!$this->available || empty($texts)) {
+        if (empty($texts)) {
+            return [];
+        }
+
+        // Re-check availability on each call — the embedding service
+        // may have started after the API server was initialized
+        if (!$this->available) {
+            $this->checkHealth();
+        }
+
+        if (!$this->available) {
             return [];
         }
 
@@ -85,6 +95,7 @@ class EmbeddingClient
         try {
             $ch = curl_init($this->endpoint . '/health');
             curl_setopt_array($ch, [
+                CURLOPT_POST => true,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 2,
             ]);
