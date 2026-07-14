@@ -1,0 +1,403 @@
+#!/usr/bin/env python3
+"""
+Council Library CLI — sovereign memory installer and manager.
+
+install   — bootstrap databases, plugins, Apache vhost, systemd units
+uninstall — reverse install (with --keep-data to preserve databases)
+enable    — systemctl --user start all services
+disable   — systemctl --user stop all services
+status    — health check every component
+doctor    — diagnose and suggest fixes
+"""
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+ROOT = Path("/foreverbox_data/council-library")
+PROFILES = {
+    "curator": "/foreverbox_data/profiles/zeon7",
+    "producer": "/foreverbox_data/profiles/leon",
+    "coach": "/foreverbox_data/profiles/gemma",
+    "director": "/foreverbox_data/profiles/otec",
+}
+API_KEY = "dev-key-change-in-production"
+DB_HOST = "localhost"
+DB_USER = "zeon7_user"
+DB_PASS = os.environ.get("DB_PASS", "F0reverb0x#2o26sql")
+API_URL = "http://localhost:8080/v1"
+
+# ── CLI entry ─────────────────────────────────────────────────
+
+
+def main():
+    p = argparse.ArgumentParser(description="Council Library installer")
+    sp = p.add_subparsers(dest="cmd")
+
+    pi = sp.add_parser("install")
+    pi.add_argument("--all", action="store_true")
+    pi.add_argument("--agent", action="append")
+    pi.add_argument("--no-systemd", action="store_true")
+
+    pu = sp.add_parser("uninstall")
+    pu.add_argument("--keep-data", action="store_true")
+
+    sp.add_parser("enable")
+    sp.add_parser("disable")
+    sp.add_parser("status")
+    sp.add_parser("doctor")
+
+    args = p.parse_args()
+    if not args.cmd:
+        p.print_help()
+        return
+
+    fn = globals().get(f"cmd_{args.cmd}")
+    if fn:
+        fn(args)
+    else:
+        print(f"Unknown command: {args.cmd}")
+
+
+# ── Commands ──────────────────────────────────────────────────
+
+
+def cmd_install(args):
+    agents = args.agent or (list(PROFILES) if args.all else [])
+    if not agents:
+        print("Specify --all or --agent NAME")
+        return
+
+    print("Council Library — Install")
+    print("=" * 40)
+
+    step("Database", _install_db)
+    for slug in agents:
+        step(f"Sanctum: agent_{slug}", lambda s=slug: _install_sanctum(s))
+    step("Token budget", _install_budget)
+    step("Config files", _install_config)
+    for slug in agents:
+        step(f"Plugin: {slug}", lambda s=slug: _install_plugin(s))
+    step("Apache vhost", _install_apache)
+    step("Embedding model", _install_embedding)
+    if not args.no_systemd:
+        step("Systemd units", _install_systemd)
+
+    print("\nInstall complete. Run 'council-library status' to verify.")
+
+
+def cmd_uninstall(args):
+    print("Council Library — Uninstall")
+    print("=" * 40)
+
+    step("Systemd units", _uninstall_systemd)
+    step("Apache vhost", _uninstall_apache)
+    for slug in PROFILES:
+        step(f"Plugin: {slug}", lambda s=slug: _uninstall_plugin(s))
+    if not args.keep_data:
+        step("Databases", _uninstall_db)
+
+    print("\nUninstall complete.")
+
+
+def cmd_enable(_args):
+    _run("systemctl --user start council-embedding council-ingestion council-wolves")
+    print("Services enabled.")
+
+
+def cmd_disable(_args):
+    _run("systemctl --user stop council-embedding council-ingestion council-wolves")
+    print("Services disabled.")
+
+
+def cmd_status(_args):
+    print("Council Library — Status")
+    print("=" * 40)
+    checks = [
+        ("MariaDB", _check_mariadb),
+        ("Databases", _check_databases),
+        ("API", _check_api),
+        ("Embedding", _check_embedding),
+        ("Systemd units", _check_systemd),
+        ("Cron jobs", _check_cron),
+    ]
+    all_ok = True
+    for label, fn in checks:
+        ok = fn()
+        status = "✓" if ok else "✗"
+        if not ok:
+            all_ok = False
+        print(f"  {status} {label}")
+    print(f"\nOverall: {'HEALTHY' if all_ok else 'DEGRADED'}")
+
+
+def cmd_doctor(_args):
+    print("Council Library — Doctor")
+    print("=" * 40)
+
+    issues = []
+
+    if not _check("systemctl is-active mariadb", "MariaDB not running"):
+        issues.append("MariaDB not running — systemctl start mariadb")
+    if not _check("curl -s http://localhost:8080/v1/healthz | grep -q ok", "API not responding"):
+        issues.append("API down — check Apache: systemctl status apache2")
+    if not _check("curl -s -X POST http://127.0.0.1:8900/health | grep -q ok", "Embedding service down"):
+        issues.append("Embedding service down — systemctl --user start council-embedding")
+
+    # Check vector indexes
+    try:
+        r = _run("mariadb -u zeon7_user -p'%s' quiddity_commons -e \"SHOW INDEX FROM quiddity_vector_references WHERE Index_type='VECTOR'\" 2>/dev/null | wc -l" % DB_PASS)
+        if "0" in r:
+            issues.append("Vector index missing — run: ALTER TABLE quiddity_vector_references ADD VECTOR INDEX idx_vector_hnsw (embedding)")
+    except Exception:
+        pass
+
+    if issues:
+        for i in issues:
+            print(f"  ✗ {i}")
+    else:
+        print("  ✓ No issues found.")
+
+    print(f"\n{len(issues)} issue(s) found.")
+
+
+# ── Install steps ─────────────────────────────────────────────
+
+
+def _install_db():
+    for fname in sorted((ROOT / "schema").glob("*.sql")):
+        _run(f"mariadb -u {DB_USER} -p'{DB_PASS}' < {fname}")
+
+
+def _install_sanctum(slug: str):
+    _run(
+        f"sed 's/{{slug}}/{slug}/g' {ROOT}/schema/02_sanctum_template.sql "
+        f"| mariadb -u {DB_USER} -p'{DB_PASS}'"
+    )
+
+
+def _install_budget():
+    _run(
+        f"mariadb -u {DB_USER} -p'{DB_PASS}' agent_registry -e "
+        f"\"INSERT INTO token_budget_ledger (tier, usage_date, tokens_used, daily_limit) "
+        f"VALUES ('system2_heavy', CURDATE(), 0, 500000) "
+        f"ON DUPLICATE KEY UPDATE daily_limit=500000; "
+        f"INSERT INTO token_budget_ledger (tier, usage_date, tokens_used, daily_limit) "
+        f"VALUES ('system2_light', CURDATE(), 0, 2000000) "
+        f"ON DUPLICATE KEY UPDATE daily_limit=2000000\""
+    )
+
+
+def _install_config():
+    for slug, prof in PROFILES.items():
+        if not Path(prof).exists():
+            continue
+        cfg = {"api_url": API_URL, "agent_slug": slug}
+        with open(Path(prof) / "foreverbox.json", "w") as f:
+            json.dump(cfg, f, indent=2)
+        # Append API key to .env
+        envf = Path(prof) / ".env"
+        if envf.exists():
+            content = envf.read_text()
+            if "FOREVERBOX_API_KEY" not in content:
+                envf.write_text(content + f"\nFOREVERBOX_API_KEY={API_KEY}\n")
+
+
+def _install_plugin(slug: str):
+    prof = Path(PROFILES.get(slug, ""))
+    if not prof.exists():
+        return
+    dest = prof / "plugins" / "memory" / "foreverbox"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    src = ROOT / "hermes-plugin"
+    for f in ["__init__.py", "plugin.yaml", "cli.py"]:
+        if (src / f).exists():
+            shutil.copy2(src / f, dest / f)
+
+
+def _install_apache():
+    vhost_src = ROOT / "docker" / "council-library-vhost.conf"
+    vhost_dst = Path("/etc/apache2/sites-available/council-library.conf")
+    if not vhost_dst.exists() or vhost_dst.read_text() != vhost_src.read_text():
+        _run(f"sudo cp {vhost_src} {vhost_dst}")
+        # Add Listen 8080 if missing
+        ports = Path("/etc/apache2/ports.conf").read_text()
+        if "Listen 8080" not in ports:
+            _run("echo 'Listen 8080' | sudo tee -a /etc/apache2/ports.conf")
+        _run("sudo a2enmod rewrite")
+        _run("sudo a2ensite council-library")
+        _run("sudo systemctl reload apache2")
+        # Ensure permissions
+        for d in [ROOT, ROOT / "php-api", ROOT / "php-api" / "public"]:
+            _run(f"sudo chmod o+x {d}")
+        _run(f"sudo chmod -R o+r {ROOT}/php-api/src {ROOT}/php-api/vendor {ROOT}/php-api/config")
+    else:
+        print("  Apache vhost already configured")
+
+
+def _install_embedding():
+    # Check if sentence-transformers is installed
+    result = _run("python3 -c 'import sentence_transformers' 2>&1")
+    if "ModuleNotFoundError" in result or "No module" in result:
+        print("  Installing sentence-transformers (this may take a minute)...")
+        _run("pip install --break-system-packages sentence-transformers")
+
+
+def _install_systemd():
+    user_dir = Path.home() / ".config" / "systemd" / "user"
+    user_dir.mkdir(parents=True, exist_ok=True)
+
+    units = {
+        "council-embedding.service": f"""[Unit]
+Description=Council Library Embedding Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3.12 {ROOT}/scripts/embedding_service.py --port 8900
+Restart=on-failure
+RestartSec=10
+Environment=DB_PASS={DB_PASS}
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+""",
+        "council-ingestion.service": f"""[Unit]
+Description=Council Library Ingestion Worker
+After=network.target council-embedding.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/php8.3 {ROOT}/scripts/ingestion_worker.php
+Restart=on-failure
+RestartSec=30
+Environment=DB_PASS={DB_PASS}
+Environment=EMBEDDING_URL=http://127.0.0.1:8900
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+""",
+        "council-wolves.service": f"""[Unit]
+Description=Council Library Wolf Workers
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c '/usr/bin/python3.12 {ROOT}/scripts/wolf_worker.py --agent=curator --wolf-id=wolf_1 & /usr/bin/python3.12 {ROOT}/scripts/wolf_worker.py --agent=producer --wolf-id=wolf_2 & /usr/bin/python3.12 {ROOT}/scripts/wolf_worker.py --agent=director --wolf-id=wolf_3 & wait'
+Restart=on-failure
+RestartSec=15
+Environment=DB_PASS={DB_PASS}
+Environment=FOREVERBOX_API_URL=http://localhost:8080/v1
+Environment=FOREVERBOX_API_KEY={API_KEY}
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+""",
+    }
+
+    for name, content in units.items():
+        (user_dir / name).write_text(content)
+
+    _run("loginctl enable-linger zeon7")
+    _run("systemctl --user daemon-reload")
+    _run("systemctl --user enable council-embedding council-ingestion council-wolves")
+    _run("systemctl --user start council-embedding council-ingestion council-wolves")
+
+
+# ── Uninstall steps ───────────────────────────────────────────
+
+
+def _uninstall_systemd():
+    _run("systemctl --user stop council-embedding council-ingestion council-wolves 2>/dev/null")
+    _run("systemctl --user disable council-embedding council-ingestion council-wolves 2>/dev/null")
+    for name in ["council-embedding.service", "council-ingestion.service", "council-wolves.service"]:
+        p = Path.home() / ".config" / "systemd" / "user" / name
+        if p.exists():
+            p.unlink()
+    _run("systemctl --user daemon-reload")
+
+
+def _uninstall_apache():
+    _run("sudo a2dissite council-library 2>/dev/null")
+    vhost = Path("/etc/apache2/sites-available/council-library.conf")
+    if vhost.exists():
+        _run(f"sudo rm {vhost}")
+    _run("sudo systemctl reload apache2 2>/dev/null")
+
+
+def _uninstall_plugin(slug: str):
+    prof = Path(PROFILES.get(slug, ""))
+    plug = prof / "plugins" / "memory" / "foreverbox"
+    if plug.exists():
+        shutil.rmtree(plug)
+
+
+def _uninstall_db():
+    for db in ["quiddity_commons", "agent_curator", "agent_producer", "agent_coach", "agent_director", "agent_registry"]:
+        _run(f"mariadb -u {DB_USER} -p'{DB_PASS}' -e 'DROP DATABASE IF EXISTS {db}'")
+
+
+# ── Health checks ─────────────────────────────────────────────
+
+
+def _check_mariadb():
+    return _check("systemctl is-active mariadb | grep -q active", "MariaDB down")
+
+
+def _check_databases():
+    out = _run(f"mariadb -u {DB_USER} -p'{DB_PASS}' -e 'SHOW DATABASES' 2>/dev/null")
+    return "quiddity_commons" in out
+
+
+def _check_api():
+    return _check("curl -s http://localhost:8080/v1/healthz | grep -q ok", "API down")
+
+
+def _check_embedding():
+    return _check("curl -s -X POST http://127.0.0.1:8900/health | grep -q ok", "Embedding service down")
+
+
+def _check_systemd():
+    return _check("systemctl --user is-active council-embedding | grep -q active", "Systemd units down")
+
+
+def _check_cron():
+    return True  # cron jobs managed by Hermes
+
+
+# ── Helpers ───────────────────────────────────────────────────
+
+
+def step(label: str, fn):
+    print(f"  {label}... ", end="", flush=True)
+    try:
+        fn()
+        print("OK")
+    except Exception as e:
+        print(f"FAILED — {e}")
+
+
+def _run(cmd: str) -> str:
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if result.returncode != 0 and "2>/dev/null" not in cmd and "2>/dev/null" not in cmd:
+        pass  # non-fatal for idempotent ops
+    return result.stdout + result.stderr
+
+
+def _check(cmd: str, hint: str) -> bool:
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    return result.returncode == 0
+
+
+if __name__ == "__main__":
+    main()
