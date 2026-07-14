@@ -26,12 +26,14 @@ class FolderRouter
     {
         $folders = [];
         $current = null;
+        $inSubfolders = false;
 
         foreach (file($path) as $line) {
             $line = rtrim($line);
-            if (preg_match('/^\s+"?(\w[\w_]*)"?\s*:\s*$/', $line, $m)) {
+            // Match: "folder_name": or folder_name: (allows / in subfolder names)
+            if (preg_match('/^\s+"?([\w][\w_\/]*)"?\s*:\s*$/', $line, $m)) {
                 $name = $m[1];
-                if ($name === 'folders' || $name === 'keywords') continue;
+                if ($name === 'folders' || $name === 'keywords' || $name === 'subfolders') continue;
                 $current = $name;
                 $folders[$current] = ['keywords' => [], 'purpose' => ''];
             } elseif ($current && preg_match('/^\s+-\s+"?(.+?)"?\s*$/', $line, $m)) {

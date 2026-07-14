@@ -54,6 +54,21 @@ folders:
       - handbook
       - publication
     purpose: "Published articles, editorial guidelines, research"
+    subfolders:
+      "04_FromTheNoise_Archives/completed/sub_stack_posts":
+        keywords:
+          - substack
+          - published
+          - post
+          - newsletter
+        purpose: "Finished and published Substack articles"
+      "04_FromTheNoise_Archives/completed/blogs":
+        keywords:
+          - blog
+          - website
+          - published
+          - post
+        purpose: "Published blog articles"
   "05_Agent_Profiles":
     keywords:
       - zeon7

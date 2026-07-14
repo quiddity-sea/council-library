@@ -23,6 +23,8 @@ FOLDERS = [
     "02_ReInvigor_Texts",
     "03_TheInitiative_Audio",
     "04_FromTheNoise_Archives",
+    "04_FromTheNoise_Archives/completed/sub_stack_posts",
+    "04_FromTheNoise_Archives/completed/blogs",
     "05_Agent_Profiles",
     "06_QuiddityLtd_Dev_Specs",
 ]
