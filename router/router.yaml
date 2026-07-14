@@ -39,3 +39,19 @@ router:
   daily_budget_tokens:
     system2_heavy: 500000
     system2_light: 2000000
+
+agent_overrides:
+  curator:
+    system2_heavy:
+      model: "nous/hermes-3-70b"
+  producer:
+    system2_light:
+      model: "qwen/qwen3-coder"
+    system2_heavy:
+      model: "deepseek/deepseek-v4-pro"
+  coach:
+    system2_light:
+      model: "anthropic/claude-sonnet-4"
+  director:
+    system2_heavy:
+      model: "deepseek/deepseek-v4-pro"

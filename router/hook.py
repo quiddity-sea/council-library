@@ -66,7 +66,7 @@ def pre_llm_call(agent: Any, messages: list, enabled_toolsets: list) -> dict | N
         has_private_data=has_private,
     )
 
-    profile = router.select_model(ctx)
+    profile = router.select_model(ctx, agent_slug=getattr(agent, 'slug', None))
 
     logger.info(
         "Router: %s → %s/%s (load=%.2f, private=%s)",

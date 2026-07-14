@@ -94,6 +94,7 @@ class CognitiveRouter:
             ModelTier(k): ModelProfile(tier=ModelTier(k), **v)
             for k, v in cfg["model_profiles"].items()
         }
+        self.agent_overrides = cfg.get("agent_overrides", {})
         self.health_cache: Dict[str, dict] = {}
         self._private_patterns = cfg.get("router", {}).get("private_patterns", [])
 
@@ -115,7 +116,7 @@ class CognitiveRouter:
             score += self.WEIGHTS["private_data_present"]
         return max(0.0, min(1.0, score))
 
-    def select_model(self, ctx: AgentRequestContext) -> ModelProfile:
+    def select_model(self, ctx: AgentRequestContext, agent_slug: str = None) -> ModelProfile:
         load = self.estimate_load(ctx)
 
         # Privacy: force local if private data present
@@ -127,9 +128,26 @@ class CognitiveRouter:
                 # Budget gate for cloud tiers
                 if tier != ModelTier.SYSTEM1_LOCAL and not self._budget_available(tier):
                     continue
-                return self.profiles[tier]
+                return self._apply_override(tier, agent_slug)
 
         return self.profiles[ModelTier.SYSTEM1_LOCAL]
+
+    def _apply_override(self, tier: ModelTier, agent_slug: str = None) -> ModelProfile:
+        """Apply per-agent model overrides if configured."""
+        profile = self.profiles[tier]
+        if agent_slug and self.agent_overrides:
+            overrides = self.agent_overrides.get(agent_slug, {}).get(tier.value, {})
+            if overrides:
+                # Merge override fields into a copy of the default profile
+                return ModelProfile(
+                    tier=profile.tier,
+                    provider=overrides.get("provider", profile.provider),
+                    model=overrides.get("model", profile.model),
+                    base_url=overrides.get("base_url", profile.base_url),
+                    max_tokens=overrides.get("max_tokens", profile.max_tokens),
+                    temperature=overrides.get("temperature", profile.temperature),
+                )
+        return profile
 
     def local_model_available(self) -> bool:
         return self._is_healthy(ModelTier.SYSTEM1_LOCAL)
