@@ -42,6 +42,8 @@ router:
 
 agent_overrides:
   curator:
+    layer_1_intuitive_reflex:
+      model: "Zeon7-Gemma:latest"
     layer_2_analytical_engine:
       model: "deepseek/deepseek-v4-flash"
   producer:
@@ -50,6 +52,8 @@ agent_overrides:
     layer_2_analytical_engine:
       model: "qwen/qwen3-coder"
   coach:
+    layer_1_intuitive_reflex:
+      model: "Zeon7-Gemma:latest"
     layer_2_analytical_engine:
       model: "deepseek/deepseek-v4-flash"
   director:
