@@ -61,3 +61,11 @@ agent_overrides:
       model: "deepseek/deepseek-v4-flash"
     layer_2_analytical_engine:
       model: "nvidia/nemotron-3-super-120b-a12b:free"
+
+wolf_overrides:
+  layer_1_intuitive_reflex:
+    model: "google/gemini-3.1-flash-lite"
+  layer_2_analytical_engine:
+    model: "deepseek/deepseek-v4-flash"
+  layer_3_deep_architect:
+    model: "deepseek/deepseek-v4-pro"

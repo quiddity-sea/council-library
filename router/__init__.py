@@ -95,6 +95,7 @@ class CognitiveRouter:
             for k, v in cfg["model_profiles"].items()
         }
         self.agent_overrides = cfg.get("agent_overrides", {})
+        self.wolf_overrides = cfg.get("wolf_overrides", {})
         self.health_cache: Dict[str, dict] = {}
         self._private_patterns = cfg.get("router", {}).get("private_patterns", [])
 
@@ -151,6 +152,23 @@ class CognitiveRouter:
 
     def local_model_available(self) -> bool:
         return self._is_healthy(ModelTier.LAYER_1_INTUITIVE_REFLEX)
+
+    def wolf_select_model(self, load: float) -> ModelProfile:
+        """Route a Wolf task to the appropriate tier based on cognitive load.
+        Uses wolf_overrides exclusively — Wolves have no agent-specific profiles."""
+        for tier in [ModelTier.LAYER_3_DEEP_ARCHITECT, ModelTier.LAYER_2_ANALYTICAL_ENGINE, ModelTier.LAYER_1_INTUITIVE_REFLEX]:
+            if load >= self.THRESHOLDS[tier] and self._is_healthy(tier):
+                profile = self.profiles[tier]
+                override = self.wolf_overrides.get(tier.value, {})
+                if override:
+                    return ModelProfile(
+                        tier=profile.tier,
+                        provider=override.get("provider", profile.provider),
+                        model=override.get("model", profile.model),
+                        base_url=override.get("base_url", profile.base_url),
+                    )
+                return profile
+        return self.profiles[ModelTier.LAYER_1_INTUITIVE_REFLEX]
 
     def scan_private(self, text: str) -> bool:
         for pattern in self._private_patterns:
