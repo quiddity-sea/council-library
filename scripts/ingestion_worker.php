@@ -74,18 +74,18 @@ while (true) {
         $insertStmt = $pdo->prepare(
             "INSERT INTO quiddity_vector_references
              (file_id, chunk_index, chunk_text, chunk_token_count, chunk_metadata, embedding)
-             VALUES (?, ?, ?, ?, ?, ?)"
+             VALUES (?, ?, ?, ?, ?, UNHEX(?))"
         );
 
-        // Try to get embeddings in batch
-        $embeddings = getEmbeddings(array_column($chunks, 'text'), $embeddingUrl);
+        // Try to get embeddings in batch (returns hex strings)
+        $embeddingsHex = getEmbeddings(array_column($chunks, 'text'), $embeddingUrl);
 
         foreach ($chunks as $i => $chunk) {
             $tokenCount = str_word_count($chunk['text']);
-            $emb = $embeddings[$i] ?? null;
+            $embHex = $embeddingsHex[$i] ?? null;
             $insertStmt->execute([
                 $file['id'], $i, $chunk['text'], $tokenCount,
-                json_encode($chunk['metadata']), $emb,
+                json_encode($chunk['metadata']), $embHex,
             ]);
         }
 
@@ -122,7 +122,7 @@ function getEmbeddings(array $texts, string $url): array
         if (!$response) return [];
 
         $data = json_decode($response, true);
-        return array_map(fn(string $hex) => hex2bin($hex), $data['embeddings'] ?? []);
+        return $data['embeddings'] ?? [];  // return hex strings directly
 
     } catch (\Throwable $e) {
         return [];

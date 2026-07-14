@@ -13,6 +13,7 @@ import sys
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 import numpy as np
+import struct
 from sentence_transformers import SentenceTransformer
 
 
@@ -37,7 +38,7 @@ class EmbeddingHandler(BaseHTTPRequestHandler):
             )
 
             result = {
-                "embeddings": [e.tobytes().hex() for e in embeddings],
+                "embeddings": [e.astype(np.float32).tobytes().hex() for e in embeddings],
                 "dimensions": embeddings.shape[1],
                 "count": len(embeddings),
             }
