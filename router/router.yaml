@@ -50,7 +50,7 @@ agent_overrides:
     layer_1_intuitive_reflex:
       model: "deepseek/deepseek-v4-flash"
     layer_2_analytical_engine:
-      model: "qwen/qwen3-coder"
+      model: "qwen/qwen3-coder:free"
   coach:
     layer_1_intuitive_reflex:
       model: "Zeon7-Gemma:latest"
