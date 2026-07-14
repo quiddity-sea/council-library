@@ -1,0 +1,4 @@
+[2026-07-14T16:23:48.760570+00:00] council-library.INFO: memory_search {"agent":"curator","query_hash":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","results":0} {"uid":"fd21a30"}
+[2026-07-14T16:25:44.595014+00:00] council-library.INFO: memory_search {"agent":"curator","query_hash":"048007d8a04dd75fee42137959e6c4ff13dceaaed064860b0619e91978b01e4d","results":1} {"uid":"6601823"}
+[2026-07-14T16:30:06.590493+00:00] council-library.INFO: memory_search {"agent":"curator","query_hash":"4183b7793fd28ba47ea9e79e7697f2915da218567e6657a158b51bd14bce91cd","results":1} {"uid":"57429f3"}
+[2026-07-14T16:40:18.444878+00:00] council-library.INFO: memory_search {"agent":"curator","query_hash":"cd41822237119d5d9bac4702f771e72ddb762e9594e68495ebff161edc11ba04","results":2} {"uid":"98cccf3"}

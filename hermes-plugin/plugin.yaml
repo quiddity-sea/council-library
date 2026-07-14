@@ -1,0 +1,7 @@
+name: foreverbox
+version: 1.0.0
+description: ForeverBox MemoryProvider — Council Library integration for Hermes Agent
+author: Council Library (Leon, Layer 2 Producer)
+hermes_version: ">=2.0"
+hooks:
+  - memory_provider
