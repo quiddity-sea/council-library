@@ -4,7 +4,7 @@
 model_profiles:
   layer_1_intuitive_reflex:
     provider: "ollama"
-    model: "gemma4:31b"
+    model: "Zeon7-Gemma:64k"
     base_url: "http://localhost:11434"
     max_tokens: 8192
     temperature: 0.4
@@ -43,7 +43,7 @@ router:
 agent_overrides:
   curator:
     layer_1_intuitive_reflex:
-      model: "Zeon7-Gemma:latest"
+      model: "Zeon7-Gemma:64k"
     layer_2_analytical_engine:
       model: "deepseek/deepseek-v4-flash"
   producer:
@@ -53,7 +53,7 @@ agent_overrides:
       model: "qwen/qwen3-coder:free"
   coach:
     layer_1_intuitive_reflex:
-      model: "Zeon7-Gemma:latest"
+      model: "Zeon7-Gemma:64k"
     layer_2_analytical_engine:
       model: "deepseek/deepseek-v4-flash"
   director:
