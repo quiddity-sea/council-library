@@ -1,88 +1,111 @@
 #!/usr/bin/env python3
 """
-Generate folder centroids for content-based routing.
-Blueprint §4.6 — Rebuilds quiddity_folder_centroids from indexed files.
-
-Run after: index_quiddity.py
-Re-run when: quiddity_folders.yaml changes or new folders added
+Generate folder centroids by averaging chunk embeddings per folder.
+Queries quiddity_files joined with quiddity_chunks, groups by folder_name,
+computes average embedding vectors, and upserts into quiddity_folder_centroids.
 """
-import os
-import sys
-import struct
+
+import json, sys, os, re
 import numpy as np
+import pymysql
+from collections import defaultdict
 
-import mysql.connector
+# Load password from .env (manual parse, no dotenv dependency)
+env_path = '/foreverbox_data/.env'
+DB_PASS = 'F0reverb0x#2o26sql'
+if os.path.exists(env_path):
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith('DB_PASSWORD='):
+                DB_PASS = line.split('=', 1)[1].strip('"\'')
+            elif line.startswith('FOREVERBOX_DB_PASS='):
+                DB_PASS = line.split('=', 1)[1].strip('"\'')
 
-DB_HOST = os.environ.get("DB_HOST", "localhost")
-DB_USER = os.environ.get("DB_USER", "zeon7_user")
-DB_PASS = os.environ.get("DB_PASS", "")
-QUIDDITY_ROOT = os.environ.get("QUIDDITY_ROOT", "/foreverbox_data/Quiddity_Lore_Sea")
+def db():
+    return pymysql.connect(
+        host='localhost', port=3306, user='zeon7_user',
+        password=DB_PASS, database='quiddity_commons',
+        charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor
+    )
 
-FOLDERS = [
-    "01_TheForeverbox_Mythos",
-    "02_ReInvigor_Texts",
-    "03_TheInitiative_Audio",
-    "04_FromTheNoise_Archives",
-    "04_FromTheNoise_Archives/completed/sub_stack_posts",
-    "04_FromTheNoise_Archives/completed/blogs",
-    "05_Agent_Profiles",
-    "06_QuiddityLtd_Dev_Specs",
-]
+def hex_to_vector(val):
+    """Convert MariaDB VECTOR (binary or hex string) to numpy array of floats."""
+    if isinstance(val, str):
+        raw = bytes.fromhex(val)
+    elif isinstance(val, bytes):
+        raw = val
+    else:
+        raise TypeError(f"unexpected embedding type: {type(val)}")
+    return np.frombuffer(raw, dtype=np.float32)
 
-
-def vector_from_blob(blob: bytes) -> np.ndarray:
-    """Decode a MariaDB VECTOR(1024) BLOB to numpy float32 array."""
-    return np.frombuffer(blob, dtype=np.float32)
-
-
-def vector_to_blob(vec: np.ndarray) -> bytes:
-    """Encode numpy float32 array to MariaDB VECTOR BLOB."""
-    return vec.astype(np.float32).tobytes()
-
+def vector_to_hex(vec):
+    """Convert numpy array back to MariaDB VECTOR hex format."""
+    return vec.astype(np.float32).tobytes().hex()
 
 def main():
-    conn = mysql.connector.connect(
-        host=DB_HOST, user=DB_USER, password=DB_PASS,
-        database="quiddity_commons", charset="utf8mb4",
-    )
-    cursor = conn.cursor()
-
-    for folder in FOLDERS:
-        print(f"Building centroid for {folder}...")
-
-        # Get all chunk embeddings for files in this folder
-        cursor.execute(
-            "SELECT qvr.embedding FROM quiddity_vector_references qvr "
-            "JOIN quiddity_files qf ON qf.id = qvr.file_id "
-            "WHERE qf.relative_path LIKE %s AND qvr.embedding IS NOT NULL",
-            (f"{folder}/%",),
-        )
-        rows = cursor.fetchall()
-
+    conn = db()
+    try:
+        with conn.cursor() as cur:
+            # Get all chunk embeddings with their file's folder path
+            cur.execute("""
+                SELECT f.relative_path, c.embedding
+                FROM quiddity_vector_references c
+                JOIN quiddity_files f ON c.file_id = f.id
+                WHERE c.embedding IS NOT NULL
+            """)
+            rows = cur.fetchall()
+        
         if not rows:
-            print(f"  {folder}: no embedded files — skipping")
-            continue
-
-        # Mean-pool embeddings
-        vectors = [vector_from_blob(r[0]) for r in rows]
-        centroid = np.mean(vectors, axis=0)
-        centroid_hex = centroid.astype(np.float32).tobytes().hex()
-
-        cursor.execute(
-            "INSERT INTO quiddity_folder_centroids "
-            "(folder_name, centroid, sample_count) "
-            "VALUES (%s, UNHEX(%s), %s) "
-            "ON DUPLICATE KEY UPDATE centroid=UNHEX(VALUES(centroid)), "
-            "sample_count=VALUES(sample_count), rebuilt_at=NOW()",
-            (folder, centroid_hex, len(rows)),
-        )
+            print("No chunk embeddings found.")
+            return
+        
+        # Group by folder (extract top-level folder from relative_path)
+        folder_vectors = defaultdict(list)
+        for row in rows:
+            path = row['relative_path']
+            # Extract top-level folder: "01_TheForeverbox_Mythos/origin_story/file.md" -> "01_TheForeverbox_Mythos"
+            m = re.match(r'^(\d{2}_[^/]+)', path)
+            if not m:
+                print(f"  WARNING: cannot extract folder from path: {path}")
+                continue
+            folder = m.group(1)
+            try:
+                vec = hex_to_vector(row['embedding'])
+                folder_vectors[folder].append(vec)
+            except Exception as e:
+                print(f"  WARNING: bad embedding for {path}: {e}")
+                continue
+        
+        if not folder_vectors:
+            print("No folders with embeddings found.")
+            return
+        
+        print(f"Found {len(folder_vectors)} folders with embeddings:")
+        
+        with conn.cursor() as cur:
+            for folder, vecs in sorted(folder_vectors.items()):
+                avg = np.mean(vecs, axis=0)  # average across all chunks in this folder
+                hex_enc = vector_to_hex(avg)
+                count = len(vecs)
+                
+                # Upsert via INSERT ... ON DUPLICATE KEY UPDATE
+                cur.execute("""
+                    INSERT INTO quiddity_folder_centroids (folder_name, centroid, sample_count, rebuilt_at)
+                    VALUES (%s, UNHEX(%s), %s, NOW())
+                    ON DUPLICATE KEY UPDATE
+                        centroid = UNHEX(%s),
+                        sample_count = %s,
+                        rebuilt_at = NOW()
+                """, (folder, hex_enc, count, hex_enc, count))
+                
+                print(f"  {folder}: {count} chunk embeddings averaged")
+        
         conn.commit()
-        print(f"  {folder}: centroid built from {len(rows)} chunks")
+        print(f"\nDone. {len(folder_vectors)} centroids generated.")
+        
+    finally:
+        conn.close()
 
-    cursor.close()
-    conn.close()
-    print("\nCentroid generation complete.")
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

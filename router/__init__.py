@@ -242,6 +242,9 @@ def scan_for_private_data(messages: list, patterns: list = None) -> bool:
             r"secret",
             r"password",
             r"token",
+            r"\bsk-[a-zA-Z0-9]{20,}\b",     # OpenAI API keys
+            r"\bgh[pousr]_[a-zA-Z0-9]{16,}\b",  # GitHub tokens
+            r"\bBearer\s+[a-zA-Z0-9._-]+\b",    # Bearer tokens
             r"/home/",
             r"/Users/",
             r"C:\\Users\\",

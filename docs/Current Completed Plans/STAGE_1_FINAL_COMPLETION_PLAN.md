@@ -10,7 +10,7 @@ Three planning blueprints are complete (100%). This plan captures all remaining 
 
 ---
 
-## Task 1: Souls Configuration Canvas V2 → V3
+## Task 1: Souls Configuration Canvas V2 → V3 - DONE
 
 **Problem:** The Souls Configuration Canvas V2 mirrors the live SOUL.md files for all 4 agents, but the live files have since been updated with:
 - Wolf Protocol sections (WOLF PROTOCOL block, spawn and retrieval instructions, the `fbox-wolf-spawn` skill reference)
@@ -28,7 +28,7 @@ Three planning blueprints are complete (100%). This plan captures all remaining 
 
 ---
 
-## Task 2: Council Library Handbook V1 → V2
+## Task 2: Council Library Handbook V1 → V2 - DONE
 
 **Problem:** The Handbook documents the system as it existed in V1 (July 2026). Since then:
 - Section 6 (File Organisation): Lists only 6 top-level folders. We now have 8 (07_MerrillLeo_CreativeWorks and 08_VisualMedia were added).
@@ -146,40 +146,44 @@ Three planning blueprints are complete (100%). This plan captures all remaining 
 
 ---
 
-## Task 4: Hermes Gateway Port Conflict
-
-**Problem:** The Hermes Gateway UI and the Council Library PHP API both attempt to use port 8080. The API won the binding race. Visiting `http://localhost:8080` returns a 404 from the PHP Slim Framework instead of the Hermes UI.
-
-**Investigation done:**
-- The gateway process accepts a `--port` flag per the CLI help text, but the actual running gateway does not recognise it (returns "unrecognized arguments: --port 8000")
-- The gateway port is likely configured in a profile or global config file
-
-**Fix:**
-1. Locate the Hermes gateway port configuration (search `.hermes/` and profile configs for "gateway" and "port")
-2. Change the gateway port from 8080 to 8000
-3. Restart the gateway
-4. Verify: `http://localhost:8080` → 404 (API), `http://localhost:8000` → Hermes UI
-
----
-
 ## Task 5: Visual Media Ingestion (Future Phase)
 
 **Not in this plan.** The 08_VisualMedia folder structure exists and is ready. Actual image ingestion (binary detection, EXIF extraction, OCR, perceptual hashing) will be a separate Stage 2 plan. This is noted here so it's not forgotten.
 
 ---
 
-## Implementation Order
+## Task 9: Master Briefing V6 → V7 - DONE
+
+**Problem:** The Master Briefing V6 is the human-facing explanation of the Council Library system. Since V6 was written:
+- 8-domain taxonomy with subfolders is live (V6 references 6 flat folders)
+- Wolf Protocol is fully implemented (V6 describes systemd workers that don't exist)
+- Shell wrappers at `/foreverbox_data/bin/` replaced the broken plugin tools
+- Sudo Protocol enforcement table + endpoints exist
+- Dead letter queue exists
+- Folder centroids are live
+- Souls Canvas is now V3
+
+**Fix:**
+1. Read the current `MASTER_BRIEFING_V6.md`
+2. Update all sections to reflect the current live state of all systems
+3. Rename to `MASTER_BRIEFING_V7.md`
+4. Move V6 to archives
+5. Run `reference-doc-alteration-log` skill
+
+---
+
+## Updated Implementation Order
 
 | # | Task | Effort | Depends On |
 |---|------|--------|------------|
-| 1 | Souls Canvas V3 | Small (read + update 1 doc) | None |
-| 2 | Handbook V2 | Medium (rewrite 3-4 sections) | None |
-| 3d | Folder Centroids | Medium (DB + Python script) | None |
-| 3a | Cognitive Router | Large (Python hook + config) | None |
-| 3b | Sudo Protocol | Medium (DB + PHP middleware) | None |
-| 3c | Dead Letter Queue | Small (DB + PHP patch) | None |
-| 4 | Gateway Port Fix | Small (config change) | None |
-| 3e | Wolf Task Queue | Large (DB + PHP + Python) | None |
-| 3f | Vector Type Align | Small (doc update) | None |
+| 1 | Souls Canvas V3 | Small | Done |
+| 2 | Vector Type Align | Small | Done |
+| 3 | Folder Centroids | Medium | Done |
+| 4 | Dead Letter Queue | Small | Done |
+| 5 | Sudo Protocol | Medium | Done |
+| 6 | Cognitive Router | Large | Done |
+| 7 | Wolf Task Queue | Large | Done |
+| 8 | Handbook V2 | Medium | Done |
+| 9 | Master Briefing V7 | Medium | Done |
 
-**Recommended first pass:** Tasks 1, 2, 4, and 3f are documentation/config changes. Quick wins. Tasks 3a-3e are implementation tasks requiring code. Task 3d (Folder Centroids) would directly improve the Sea's auto-classification reliability, which was a pain point in the Classification Plan execution.
+**Recommended next pass:** Code tasks (6, 7), then doc tasks (8, 9) last to capture the final state of all systems.

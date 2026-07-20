@@ -84,7 +84,7 @@ CREATE TABLE quiddity_vector_references (
     chunk_index INT UNSIGNED NOT NULL,
     chunk_text MEDIUMTEXT NOT NULL,
     chunk_token_count INT UNSIGNED NOT NULL,
-    embedding VECTOR(1024) NOT NULL,
+    embedding VECTOR(384) NOT NULL,
     chunk_metadata JSON NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (file_id) REFERENCES quiddity_files(id) ON DELETE CASCADE,
@@ -102,7 +102,7 @@ CREATE TABLE conversation_vectors (
     message_id BIGINT UNSIGNED NOT NULL,
     role ENUM('user','assistant','system','tool') NOT NULL,
     content_text MEDIUMTEXT NOT NULL,
-    embedding VECTOR(1024) NOT NULL,
+    embedding VECTOR(384) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     KEY idx_agent_session (agent_slug, session_id),
     KEY idx_created (created_at)
@@ -471,7 +471,7 @@ Every request must provide:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/v1/commons/ingest/batch` | Ingest multiple files in parallel. Body: `{ "files": [...], "chunking": "semantic_paragraph", "chunk_size_tokens": 512, "overlap_tokens": 64, "embedding_model": "bge-m3", "concurrency": 3, "callback_url": "..." }`. Returns `{ "job_id": "uuid", "status": "accepted", "estimated_chunks": 142 }`. |
+| POST | `/v1/commons/ingest/batch` | Ingest multiple files in parallel. Body: `{ "files": [...], "chunking": "semantic_paragraph", "chunk_size_tokens": 512, "overlap_tokens": 64, "embedding_model": "all-MiniLM-L6-v2", "concurrency": 3, "callback_url": "..." }`. Returns `{ "job_id": "uuid", "status": "accepted", "estimated_chunks": 142 }`. |
 
 **Wolf Operations**
 
@@ -656,8 +656,8 @@ If a directive genuinely requires no Wolf action (a pure strategic note, a memo 
 
 ### 4.2 Embedding Model
 
-- **Default:** `BAAI/bge-m3` (1024 dims, multilingual).
-- **Alternative (local):** `nomic-ai/nomic-embed-text-v1.5` (768 dims, 8k context).
+- **Default:** `sentence-transformers/all-MiniLM-L6-v2` (384 dims, English, light).
+- **Alternative:** `BAAI/bge-m3` (1024 dims, multilingual — requires 2.2 GB GPU).
 - **Batch size:** 32 texts per forward pass.
 - **Normalisation:** L2-normalise before insert (cosine = dot product).
 
@@ -862,7 +862,7 @@ Files routed to `_review/` stay in a `Quiddity_Lore_Sea/_review/` holding direct
 -- Add to quiddity_commons schema (§2.1)
 CREATE TABLE quiddity_folder_centroids (
     folder_name VARCHAR(128) PRIMARY KEY,
-    centroid VECTOR(1024) NOT NULL,
+    centroid VECTOR(384) NOT NULL,
     sample_count INT UNSIGNED NOT NULL,
     rebuilt_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_centroid_hnsw (centroid)
@@ -1921,7 +1921,7 @@ from pathlib import Path
 import mysql.connector
 
 QUIDDITY_ROOT = Path("/hermes/profiles/zeon7/quiddity")
-EMBED_MODEL = "BAAI/bge-m3"
+EMBED_MODEL = "all-MiniLM-L6-v2"
 CHUNK_TOKENS = 512
 OVERLAP = 64
 
@@ -2083,7 +2083,7 @@ services:
   embedding:
     image: ghcr.io/huggingface/text-embeddings-inference:1.5
     container_name: foreverbox-embed
-    command: --model-id BAAI/bge-m3 --port 8000 --max-batch-size 32
+    command: --model-id sentence-transformers/all-MiniLM-L6-v2 --port 8900 --max-batch-size 32
     deploy:
       resources:
         reservations:

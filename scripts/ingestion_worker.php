@@ -183,6 +183,18 @@ foreach ($files as $file) {
     } catch (Throwable $e) {
         echo "    ERROR: " . $e->getMessage() . "\n";
         $statusStmt->execute(['failed', 'failed', $e->getMessage(), $fileId]);
+
+        // Write failed chunks to dead letter queue for retry
+        if (isset($chunks) && is_array($chunks) && count($chunks) > 0) {
+            $dlStmt = $pdo->prepare(
+                'INSERT INTO ingestion_dead_letter (file_id, chunk_index, chunk_text, error_message, error_trace, retry_count, max_retries, last_attempted_at, created_at)
+                 VALUES (?, ?, ?, ?, ?, 0, 5, NOW(), NOW())'
+            );
+            foreach ($chunks as $ci => $ct) {
+                $dlStmt->execute([$fileId, $ci, mb_substr($ct, 0, 64000), $e->getMessage(), $e->getTraceAsString()]);
+            }
+            echo "    -> wrote " . count($chunks) . " chunks to dead letter\n";
+        }
     }
 }
 

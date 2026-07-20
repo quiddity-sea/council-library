@@ -247,13 +247,26 @@ class FolderController
     {
         $jobId = bin2hex(random_bytes(16));
 
-        $this->logger->info('centroid_rebuild_queued', ['job_id' => $jobId]);
+        $scriptPath = __DIR__ . '/../../scripts/generate_folder_centroids.py';
+        $output = [];
+        $exitCode = -1;
+        exec('/usr/bin/python3.12 ' . escapeshellarg($scriptPath) . ' 2>&1', $output, $exitCode);
+
+        $result = implode("\n", $output);
+        $success = $exitCode === 0;
+
+        $this->logger->info('centroid_rebuild_executed', [
+            'job_id' => $jobId,
+            'success' => $success,
+            'output' => $result,
+        ]);
 
         return $this->json($response, [
-            'success' => true,
-            'job_id'  => $jobId,
-            'status'  => 'queued',
-        ], 202);
+            'success'  => $success,
+            'job_id'   => $jobId,
+            'status'   => $success ? 'completed' : 'failed',
+            'output'   => $result,
+        ], $success ? 200 : 500);
     }
 
     // ── Private helpers ─────────────────────────────────────
