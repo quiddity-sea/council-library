@@ -42,7 +42,7 @@ class VectorSearch
              FROM quiddity_vector_references qvr
              JOIN quiddity_files qf ON qf.id = qvr.file_id
              WHERE qvr.embedding IS NOT NULL
-             LIMIT 200"
+             LIMIT 5000"
         );
         $candidates = $stmt->fetchAll();
 

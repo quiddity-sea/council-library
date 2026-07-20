@@ -1,0 +1,164 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Ingestion Worker — background processor for Quiddity Commons indexing.
+ * Blueprint §4.3. Polls quiddity_files for pending items, chunks them,
+ * and marks them indexed. Runs indefinitely or processes a batch and exits.
+ *
+ * Usage: php ingestion_worker.php [--once] [--concurrency=3]
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/../php-api/vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../php-api');
+$dotenv->safeLoad();
+
+$host = getenv('DB_HOST') ?: 'localhost';
+$user = getenv('DB_USER') ?: 'zeon7_user';
+$pass = getenv('DB_PASS') ?: '';
+$loreSea = getenv('QUIDDITY_ROOT') ?: '/foreverbox_data/Quiddity_Lore_Sea';
+$embeddingUrl = getenv('EMBEDDING_URL') ?: 'http://127.0.0.1:8900';
+$once = in_array('--once', $argv);
+
+$pdo = new PDO(
+    "mysql:host={$host};dbname=quiddity_commons;charset=utf8mb4",
+    $user, $pass,
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+);
+
+echo "Ingestion Worker started (pid " . getmypid() . ")\n";
+
+while (true) {
+    // Find pending files
+    $stmt = $pdo->query(
+        "SELECT id, relative_path FROM quiddity_files
+         WHERE indexing_status IN ('pending', 'processing')
+         ORDER BY last_modified ASC LIMIT 10"
+    );
+    $files = $stmt->fetchAll();
+
+    if (empty($files)) {
+        if ($once) break;
+        echo "No pending files. Sleeping 30s...\n";
+        sleep(30);
+        continue;
+    }
+
+    foreach ($files as $file) {
+        $filePath = "{$loreSea}/{$file['relative_path']}";
+        // Skip Windows Zone.Identifier junk
+        if (str_contains($file['relative_path'], ':Zone.Identifier')) {
+            $pdo->prepare("UPDATE quiddity_files SET indexing_status='failed', error_message='Windows ADS metadata — skipped' WHERE id=?")
+                ->execute([$file['id']]);
+            continue;
+        }
+        if (!file_exists($filePath)) {
+            $pdo->prepare("UPDATE quiddity_files SET indexing_status='failed', error_message='File not found' WHERE id=?")
+                ->execute([$file['id']]);
+            echo "  SKIP {$file['relative_path']}: not found\n";
+            continue;
+        }
+
+        // Mark processing
+        $pdo->prepare("UPDATE quiddity_files SET indexing_status='processing' WHERE id=?")
+            ->execute([$file['id']]);
+
+        $content = file_get_contents($filePath);
+        $chunks = chunkText($content);
+
+        echo "  {$file['relative_path']}: {$file['id']} — " . count($chunks) . " chunks\n";
+
+        // Clear old chunks
+        $pdo->prepare("DELETE FROM quiddity_vector_references WHERE file_id=?")
+            ->execute([$file['id']]);
+
+        // Store chunks with embeddings if available
+        $insertStmt = $pdo->prepare(
+            "INSERT INTO quiddity_vector_references
+             (file_id, chunk_index, chunk_text, chunk_token_count, chunk_metadata, embedding)
+             VALUES (?, ?, ?, ?, ?, UNHEX(?))"
+        );
+
+        // Try to get embeddings in batch (returns hex strings)
+        $embeddingsHex = getEmbeddings(array_column($chunks, 'text'), $embeddingUrl);
+
+        foreach ($chunks as $i => $chunk) {
+            $tokenCount = str_word_count($chunk['text']);
+            $embHex = $embeddingsHex[$i] ?? null;
+            $sanitised = mb_convert_encoding($chunk['text'], 'UTF-8', 'UTF-8');
+            if ($embHex === null) continue;  // skip unembedded chunks
+            $insertStmt->execute([
+                $file['id'], $i, $sanitised, $tokenCount,
+                json_encode($chunk['metadata']), $embHex,
+            ]);
+        }
+
+        // Mark indexed
+        $pdo->prepare(
+            "UPDATE quiddity_files SET indexing_status='indexed', indexed_at=NOW() WHERE id=?"
+        )->execute([$file['id']]);
+    }
+
+    if ($once) break;
+    sleep(5);
+}
+
+echo "Ingestion Worker finished.\n";
+
+// ── Embedding helper ───────────────────────────────────────
+
+function getEmbeddings(array $texts, string $url): array
+{
+    if (empty($texts)) return [];
+
+    try {
+        $ch = curl_init($url . '/embed');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode(['texts' => $texts]),
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 60,
+        ]);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        if (!$response) return [];
+
+        $data = json_decode($response, true);
+        return $data['embeddings'] ?? [];  // return hex strings directly
+
+    } catch (\Throwable $e) {
+        return [];
+    }
+}
+
+// ── Chunker ──────────────────────────────────────────────────
+
+function chunkText(string $text, int $maxTokens = 512, int $overlap = 64): array
+{
+    $paragraphs = preg_split('/\n\n+/', $text);
+    $chunks = [];
+
+    foreach ($paragraphs as $para) {
+        $para = trim($para);
+        if (empty($para)) continue;
+
+        $words = explode(' ', $para);
+        if (count($words) <= $maxTokens) {
+            $chunks[] = ['text' => $para, 'metadata' => []];
+            continue;
+        }
+
+        // Split long paragraphs
+        for ($i = 0; $i < count($words); $i += $maxTokens - $overlap) {
+            $slice = array_slice($words, $i, $maxTokens);
+            if (empty($slice)) break;
+            $chunks[] = ['text' => implode(' ', $slice), 'metadata' => []];
+        }
+    }
+
+    return $chunks;
+}

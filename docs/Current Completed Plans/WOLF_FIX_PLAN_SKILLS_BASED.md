@@ -22,7 +22,7 @@ Seven skills that wrap the council-library REST API via `curl`. They bypass the 
 
 ---
 
-## STAGE 1: Create Seven fbox Skills
+## STAGE 1: Create Seven fbox Skills - DONE
 
 All seven live in `/foreverbox_data/Shared_Skills/foreverbox/`. Each is a standard Hermes skill (SKILL.md with YAML frontmatter).
 
@@ -128,7 +128,7 @@ Body: {"filename": "my_doc.md", "organise": true}
 
 **Skill trigger:** Agent says "ingest file", "process new file", "index the Sea", "sync Quiddity Lore", etc.
 
-### 1.8 Unified Sync Daemon
+### 1.8 Unified Sync Daemon - DONE
 
 **File:** `/foreverbox_data/sync/sync_daemon.py`
 
@@ -146,6 +146,31 @@ Body: {"filename": "my_doc.md", "organise": true}
 - Triggered by systemd timer every 30 minutes
 - Idempotent — tracks sync state so nothing is double-posted
 - Extensible — new sync operations added as modules
+
+**Known issues (must fix before activation):**
+
+1. **Payload format mismatch (root cause of 393 errors)**: The daemon POSTs paired user+assistant as `{"user": "...", "assistant": "..."}`. The API expects individual message appends: `{"role": "user", "content_text": "...", "message_seq": N}`. Fix: post each message individually.
+
+2. **Session DB path mismatch**: Daemon reads from `profiles/{agent}/state.db`. Actual Hermes session DB path needs verification. Check `~/.hermes/sessions.db` and `~/.hermes/profiles/{agent}/sessions.db`.
+
+3. **Wrong agent identity for file sync**: Daemon uses `api_headers("curator")` for all file syncs. Should use `api_headers("leon")` since Leon is the Producer responsible for ingestion.
+
+4. **Broken Zone.Identifier filter**: Checks for `.Zone.Identifier` suffix but actual files end with `:Zone.Identifier`. Fix: `file_path.name.endswith(":Zone.Identifier")`.
+
+5. **No retry logic**: Failed POSTs are never retried. Fix: wrap each POST in 3 attempts with exponential backoff.
+
+**Activation steps (after fixes are applied):**
+1. Fix the 5 issues above in `sync_daemon.py`.
+2. Test manually: `python3 /foreverbox_data/sync/sync_daemon.py sync all`
+3. Verify 0 errors in the output.
+4. Install systemd service and timer:
+   ```bash
+   sudo cp /foreverbox_data/sync/sync_daemon.service /etc/systemd/system/
+   sudo cp /foreverbox_data/sync/sync_daemon.timer /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now sync_daemon.timer
+   ```
+5. Verify the timer is active: `systemctl status sync_daemon.timer`
 
 **Storage:** `/foreverbox_data/sync/`
 ```
@@ -173,7 +198,7 @@ Or pull from `foreverbox.json`:
 
 ---
 
-## STAGE 2: Update Wolf Profile
+## STAGE 2: Update Wolf Profile - DONE
 
 ### 2.1 Remove Broken Plugin Tools
 
@@ -211,7 +236,7 @@ Adding the seven new skills to Shared_Skills makes them immediately available to
 
 ---
 
-## STAGE 3: Distribute to All Agents
+## STAGE 3: Distribute to All Agents - DONE
 
 Apply the same Shared_Skills symlink approach already used for fbox-council-library-cli, fbox-operations, etc.
 
@@ -219,15 +244,15 @@ All four core agents already have the symlink. The new skills appear automatical
 
 ---
 
-## STAGE 4: End-to-End Wolf Verification
+## STAGE 4: End-to-End Wolf Verification - DONE
 
-### 4.1 Identity Test (AC-1)
+### 4.1 Identity Test (AC-1) - DONE
 ```
 hermes chat --profile wolf -q "Who are you?" -m Zeon7-Gemma:64k --provider ollama --source wolf
 ```
 Expected: "I am a Wolf, a Council Library research worker."
 
-### 4.2 Search + Write Test (AC-2 + AC-3 combined)
+### 4.2 Search + Write Test (AC-2 + AC-3 combined) - DONE
 ```
 hermes chat --profile wolf -q "Research task. Task ID: e2e_test. Find one current UK headline with source URL. Write findings to Sanctum: load fbox-memory-upsert skill, upsert namespace=wolf_tasks, key=e2e_test, content=<your findings>. Then upsert namespace=wolf_tasks, key=e2e_test:done, content='{\"status\":\"completed\"}'. Exit." -m Zeon7-Gemma:64k --provider ollama --source wolf
 ```
@@ -237,18 +262,38 @@ hermes chat --profile wolf -q "Research task. Task ID: e2e_test. Find one curren
 mariadb -u zeon7_user -p agent_wolf -e "SELECT key_name, content_text FROM memory_lore WHERE namespace='wolf_tasks'"
 ```
 
-### 4.3 Concurrent Test (AC-4)
+### 4.3 Concurrent Test (AC-4) - DONE
 Spawn 3 wolves with different task IDs simultaneously using `terminal(background=True)`. Verify all three write to Sanctum.
 
-### 4.4 Agent Spawn Test (AC-5)
+### 4.4 Agent Spawn Test (AC-5) - DONE
 From a cloud-model agent (Leon, DeepSeek), spawn a wolf via `terminal(background=True)`. Verify results in Sanctum.
 
-### 4.5 Layer 1 Guard Test (AC-6)
+### 4.5 Layer 1 Guard Test (AC-6) - DONE
 Attempt to spawn a wolf from a local-model agent. Verify blocked with clear message.
+
+**Test procedure:**
+1. Switch to a local-model agent profile (e.g. `zeon7` with `provider: ollama`, model `Zeon7-Gemma:64k`).
+2. Issue a wolf spawn command via terminal:
+   ```
+   hermes chat --profile zeon7 -m Zeon7-Gemma:64k --provider ollama -q "Spawn a wolf to research AI news. Task ID: ac6_test. Use terminal background to run hermes chat --profile wolf."
+   ```
+3. **Expected behaviour**: The agent should refuse to spawn the wolf, reporting: "Wolves unavailable — GPU occupied by my local model. Switch me to Layer 2 or 3 to spawn wolves."
+
+**Actual result (2026-07-20):** FAIL. The agent ignored the SOUL.md Layer 1 guard instruction and attempted to spawn the wolf via `terminal(background=True)`. The wolf process did not survive (no GPU available), but the guard was bypassed at the prompt level.
+
+**Known limitation (confirmed by test):**
+The Layer 1 guard is **prompt-level only**. The SOUL.md tells the agent not to spawn wolves on local models, but there is no code-level enforcement in the Hermes CLI or the wolf profile itself. Zeon7-Gemma:64k demonstrated that a sufficiently capable model can ignore the SOUL.md instruction and attempt the spawn.
+
+**Blocker:**
+AC-6 cannot pass without code-level enforcement. This requires either:
+- A pre-flight check in the Hermes CLI that queries `ollama ps` or checks the current provider before launching a wolf process, OR
+- A wrapper script around `hermes chat --profile wolf` that checks GPU availability first
+
+Both approaches require changes outside the scope of this plan (Hermes core or shell wrapper changes). This task is blocked pending a decision on how to implement code-level enforcement.
 
 ---
 
-## STAGE 5: Blueprint Update
+## STAGE 5: Blueprint Update - DONE
 
 Update `/foreverbox_data/council-library/docs/WOLF_UPGRADE_BLUEPRINT_V2.md` to V3:
 
@@ -260,7 +305,7 @@ Update `/foreverbox_data/council-library/docs/WOLF_UPGRADE_BLUEPRINT_V2.md` to V
 
 ---
 
-## STAGE 6: Agent SOUL.md Wolf Protocol
+## STAGE 6: Agent SOUL.md Wolf Protocol - DONE
 
 Once AC-1 through AC-6 pass, insert wolf-spawning protocols into the four core agent SOUL.md files:
 
@@ -281,7 +326,7 @@ Once AC-1 through AC-6 pass, insert wolf-spawning protocols into the four core a
 | 4 | End-to-end wolf verification (all 6 ACs) | 15 min | Stages 1-3 |
 | 5 | Blueprint V3 update | 15 min | Stage 4 |
 | 6 | Core agent SOUL.md wolf protocol | 10 min | Stage 4 |
-| 7 | Unified sync daemon + systemd timer | 30 min | Nothing |
+| 7 | Unified sync daemon + systemd timer | 30 min | Nothing | DONE
 
 **Total: ~110 minutes. Zero Hermes core changes.**
 

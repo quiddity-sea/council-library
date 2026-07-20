@@ -26,16 +26,17 @@ class FolderRouter
     {
         $folders = [];
         $current = null;
+        $inSubfolders = false;
 
         foreach (file($path) as $line) {
             $line = rtrim($line);
             // Match: "folder_name": or folder_name: (allows / in subfolder names)
-            if (preg_match('/^\s+\"?([\w][\w_\/-]*)\"?\s*:\s*$/', $line, $m)) {
+            if (preg_match('/^\s+"?([\w][\w_\/]*)"?\s*:\s*$/', $line, $m)) {
                 $name = $m[1];
                 if ($name === 'folders' || $name === 'keywords' || $name === 'subfolders') continue;
                 $current = $name;
                 $folders[$current] = ['keywords' => [], 'purpose' => ''];
-            } elseif ($current && preg_match('/^\s+-\s+\"?(.+?)\"?\s*$/', $line, $m)) {
+            } elseif ($current && preg_match('/^\s+-\s+"?(.+?)"?\s*$/', $line, $m)) {
                 $folders[$current]['keywords'][] = trim($m[1]);
             } elseif ($current && preg_match('/^\s+purpose:\s*"(.+)"$/', $line, $m)) {
                 $folders[$current]['purpose'] = $m[1];
@@ -46,24 +47,17 @@ class FolderRouter
 
     // ── Classification ────────────────────────────────────────
 
-    public function classify(string $contentText, array $chunkEmbeddings = [], ?string $filename = null): string
+    public function classify(string $contentText, array $chunkEmbeddings = []): string
     {
-        // 1. Try filename-based classification first
-        if ($filename) {
-            $result = $this->filenameClassify($filename);
-            if ($result !== null) return $result;
-        }
-
-        // 2. Try vector classification (if centroids exist)
         if ($this->embedder->isAvailable()) {
             $docVec = $this->embedder->embedOne(substr($contentText, 0, 2000));
             if ($docVec) {
                 $result = $this->vectorClassify($docVec);
-                if ($result !== null) return $result;
+                if ($result !== null) {
+                    return $result;
+                }
             }
         }
-
-        // 3. Fall back to keyword classification
         return $this->keywordClassify($contentText);
     }
 
@@ -92,27 +86,6 @@ class FolderRouter
         return null;
     }
 
-    private function filenameClassify(string $filename): ?string
-    {
-        $filenameLower = strtolower($filename);
-        $scores = [];
-        foreach ($this->folders as $folder => $info) {
-            $keywords = $info['keywords'] ?? [];
-            $score = 0;
-            foreach ($keywords as $kw) {
-                if (str_contains($filenameLower, strtolower($kw))) {
-                    $score += 3; // filename match weighted 3x higher than body text
-                }
-            }
-            if ($score > 0) {
-                $scores[$folder] = $score;
-            }
-        }
-        if (empty($scores)) return null;
-        arsort($scores);
-        return array_key_first($scores);
-    }
-
     private function keywordClassify(string $contentText): string
     {
         $contentText = substr($contentText, 0, 4096);
@@ -126,8 +99,7 @@ class FolderRouter
         $best = array_key_first($scores);
         $bestScore = $scores[$best];
 
-        // Changed threshold from 2 to 1 for subfolder-level classification
-        return $bestScore < 1 ? '_review' : $best;
+        return $bestScore < 2 ? '_review' : $best;
     }
 
     private function keywordScore(string $text, array $keywords): int
