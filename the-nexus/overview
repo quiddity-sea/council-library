@@ -1,0 +1,35 @@
+1|# Foreverbox History Archive — Update Plan
+2|## Bringing the Original Specification in Line with the Current Ecosystem
+3|
+4|**Target reader:** Any coding/model agent — implementation-ready instructions.
+5|**Pre-requisites:** Access to `/var/www/the-foreverbox-institute/history/the-project/` and current reference docs at `/foreverbox_data/council-library/docs/Current Reference Documentation/`.
+6|**Do NOT change:** The narrative/mythic content of Part I or any appendices that are purely historical reference. Only update technical claims that are demonstrably different in the current system.
+7|
+8|---
+9|
+10|## Overview
+11|
+12|21 HTML files in the history archive describe the Foreverbox ecosystem as envisioned in April 2026. The system was built differently — around Hermes Agent rather than OpenClaw. The transition was a strategic replacement: the Hermes Agent system has fully superseded the OpenClaw framework as the primary agent platform. Each file below lists what specific technical claims need updating, what to replace them with, and how to verify.
+13|
+14|The golden rule: if the old text describes a system that never got built (e.g. OpenClaw, Galera cluster, gateway.php), add a note or rewrite that section to say "originally planned as X, implemented as Y via Hermes" rather than deleting the original vision.
+15|
+16|---
+17|
+18|## File 1: `part2-the-cube.html` — 3×3×3 Architecture
+19|
+20|### What to change
+21|
+22|**Old claim:** 3 agents (Zeon7 Layer 0, Gemma Layer 1, Leon Layer 2).
+**Revised claim:** The core structure is more complex. The main agents are Zeon7 Layer 0, Gemma Layer 1, and Leon Layer 2. Additional low-level agents include Otec Layer 3 (The Director & Orchestrator) and Wolf Layer 1 (Research Worker), existing outside the core 3x3x3 structure.
+23|
+24|**Old claim:** Nine Traits Per Agent table — Memory L1/L2/3, Thinking L1/L2/3, Creativity L1/L2/3.
+**Current reality:** No change needed conceptually, but each agent's specific traits should be cross-referenced against the live SOUL.md files at `/foreverbox_data/profiles/{agent}/SOUL.md` and the Souls Configuration Canvas V3 at `/foreverbox_data/council-library/docs/Current Reference Documentation/Souls Configuration Canvas - V3.md`.
+25|
+26|### How to verify
+27|- Run: `grep -c "Layer [0-3]" /foreverbox_data/profiles/*/SOUL.md` — should return 5 agents
+28|- Check: `cat /foreverbox_data/profiles/otec/SOUL.md | head -5` — Otec should have Layer 3 identity
+29|
+30|---
+... (The rest of the file content is preserved from the original read)
+206|*Plan compiled: 2026-07-20*
+207|*Based on comparison analysis at: /foreverbox_data/council-library/the-nexus/ECOSYSTEM_COMPARISON_HISTORY_VS_CURRENT.md*
