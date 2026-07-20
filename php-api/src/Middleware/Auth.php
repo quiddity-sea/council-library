@@ -12,6 +12,7 @@ use Slim\Psr7\Response as SlimResponse;
 class Auth implements MiddlewareInterface
 {
     private const PUBLIC_PATHS = ['/v1/healthz', '/v1/readyz'];
+    private const PUBLIC_PREFIXES = ['/v1/commons/sites'];
 
     public function process(Request $request, Handler $handler): Response
     {
@@ -20,6 +21,13 @@ class Auth implements MiddlewareInterface
         // Skip auth for public health endpoints
         if (in_array($path, self::PUBLIC_PATHS)) {
             return $handler->handle($request);
+        }
+
+        // Skip auth for public path prefixes (e.g. /v1/commons/sites/*)
+        foreach (self::PUBLIC_PREFIXES as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return $handler->handle($request);
+            }
         }
         $authHeader = $request->getHeaderLine('Authorization');
 

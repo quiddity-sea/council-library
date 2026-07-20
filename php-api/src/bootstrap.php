@@ -49,14 +49,18 @@ $builder->addDefinitions([
         return $logger;
     },
 
-    \CouncilLibrary\Service\VectorSearch::class => function (PDO $pdo): \CouncilLibrary\Service\VectorSearch {
+    CouncilLibrary\Service\VectorSearch::class => function (PDO $pdo): CouncilLibrary\Service\VectorSearch {
         $pdo->exec('USE quiddity_commons');
-        return new \CouncilLibrary\Service\VectorSearch($pdo);
+        return new CouncilLibrary\Service\VectorSearch($pdo);
     },
 
-    \CouncilLibrary\Service\EmbeddingClient::class => function (): \CouncilLibrary\Service\EmbeddingClient {
+    CouncilLibrary\Service\EmbeddingClient::class => function (): CouncilLibrary\Service\EmbeddingClient {
         $url = $_ENV['EMBEDDING_URL'] ?? 'http://127.0.0.1:8900';
-        return new \CouncilLibrary\Service\EmbeddingClient($url);
+        return new CouncilLibrary\Service\EmbeddingClient($url);
+    },
+
+    CouncilLibrary\Controller\ConnectedSitesController::class => function (PDO $pdo, Monolog\Logger $logger): CouncilLibrary\Controller\ConnectedSitesController {
+        return new CouncilLibrary\Controller\ConnectedSitesController($pdo, $logger);
     },
 ]);
 

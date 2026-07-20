@@ -8,7 +8,7 @@ use Slim\Routing\RouteCollectorProxy;
 use CouncilLibrary\Controller\{
     SoulController, MemoryController, ConversationController,
     WolfController, QuiddityController, IngestionController,
-    FolderController, DirectorController
+    FolderController, DirectorController, ConnectedSitesController
 };
 
 $container = require __DIR__ . '/../src/bootstrap.php';
@@ -78,17 +78,18 @@ $app->group('/v1/sanctum', function (RouteCollectorProxy $s) {
 
 // ── Commons ─────────────────────────────────────────────────
 $app->group('/v1/commons', function (RouteCollectorProxy $c) {
-    $c->get('/files', c(QuiddityController::class, 'listFiles'));
-    $c->post('/files/sync', c(QuiddityController::class, 'sync'));
-    $c->get('/search', c(QuiddityController::class, 'search'));
-    $c->get('/files/{fid}/chunks', c(QuiddityController::class, 'chunks'));
-    $c->post('/ingest/batch', c(IngestionController::class, 'batch'));
-
+    $c->get('/files', c(CommonsController::class, 'listFiles'));
+    $c->post('/files/sync', c(CommonsController::class, 'syncFiles'));
+    $c->get('/files/{id}/chunks', c(CommonsController::class, 'getChunks'));
+    $c->get('/search', c(CommonsController::class, 'search'));
     $c->get('/folders', c(FolderController::class, 'list'));
     $c->put('/folders', c(FolderController::class, 'upsert'));
     $c->delete('/folders/{name}', c(FolderController::class, 'delete'));
     $c->post('/folders/reclassify', c(FolderController::class, 'reclassify'));
     $c->post('/folders/rebuild-centroids', c(FolderController::class, 'rebuildCentroids'));
+    $c->get('/sites', c(ConnectedSitesController::class, 'list'));
+    $c->get('/sites/{slug}', c(ConnectedSitesController::class, 'get'));
+    $c->post('/sites', c(ConnectedSitesController::class, 'upsert'));
 });
 
 // ── Director ────────────────────────────────────────────────
