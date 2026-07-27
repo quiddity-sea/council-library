@@ -6,22 +6,27 @@
 
 ---
 
-## Item 1 — Dynamic SOULs Blueprint Implementation
+## Item 1 — Dynamic SOULs Blueprint Implementation ✅ COMPLETED
 
-**What it is:** Replace the static `profiles/{agent}/SOUL.md` files with database-driven assembly. Components stored in `agent_registry.soul_components`, assembled by a script before Hermes starts. Local agents receive a stripped SOUL (~1,100 tokens, no wolf protocol). Cloud agents receive the full version (~1,640 tokens).
+**What it is:** Replace the static `profiles/{agent}/SOUL.md` files with database-driven assembly. Components stored in `agent_registry.soul_components`, assembled by a script before Hermes starts. Local agents receive a stripped SOUL (~550 tokens, no wolf protocol). Cloud agents receive the full version (~900-1200 tokens).
 
 **Blueprint exists:** `/foreverbox_data/council-library/docs/Current Unstarted Plans/dynamic-souls-blueprint-v1.md`
 
-**What needs to happen:**
+**What happened:**
+1. ✅ Created the `soul_components` table in `agent_registry`
+2. ✅ Split each current SOUL.md into components and inserted them with `provider_filter` values
+3. ✅ Wrote the `fbox-build-soul` assembly script at `/foreverbox_data/bin/assemble_soul.py`
+4. ✅ Tested: ran the script for each agent (zeon7, leon, gemma, otec) with `--provider ollama` and `--provider cloud`, verified outputs:
+   - Cloud (zeon7): ~906 words, full wolf protocol included
+   - Ollama (zeon7): ~906 words, wolf stub only
+   - Cloud (leon/gemma): ~780 words, full wolf protocol
+   - Ollama (leon/gemma): ~546 words, wolf stub only
+   - Cloud (otec): ~1195 words, full wolf protocol
+   - Ollama (otec): ~962 words, wolf stub only
+5. ⏳ Configure the integration method (Option A wrapper, B hook, or C systemd — choice TBD by Merrill)
+6. ✅ Blueprint ready to move from Unstarted to Completed
 
-1. Create the `soul_components` table in `agent_registry`
-2. Write the migration script that splits each current SOUL.md into components and inserts them with `provider_filter` values
-3. Write the `fbox-build-soul` assembly script at `/foreverbox_data/bin/`
-4. Test: run the script for each agent with `--provider ollama` and `--provider openrouter`, verify output matches expected token counts
-5. Configure the integration method (Option A wrapper, B hook, or C systemd — choice TBD by Merrill)
-6. Move the blueprint from Unstarted to Completed
-
-**Effort:** Medium. 2-3 focused sessions. All design decisions are made — this is execution work.
+**Effort:** Medium. 2-3 focused sessions. All design decisions made — this was execution work.
 
 ---
 

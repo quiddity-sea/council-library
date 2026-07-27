@@ -1,6 +1,6 @@
 # Plans Progression
 
-*Last updated: 2026-07-20*
+*Last updated: 2026-07-26*
 
 ---
 
@@ -8,6 +8,8 @@
 
 | Plan | Location | Status | Completion |
 |------|----------|--------|------------|
+| STATIC_TO_DYNAMIC_TRANSITION_PLAN | Current Completed Plans | Complete | 100% |
+| NEXUS_BLUEPRINT_V1 | Current Completed Plans | Complete | 100% |
 | CLASSIFICATION_AND_SEMANTIC_IMPROVEMENT_UPDATE_PLAN | Current Completed Plans | Complete | 100% |
 | WOLF_FIX_PLAN_SKILLS_BASED | Current Completed Plans | Complete | 100% |
 | WOLF_UPGRADE_BLUEPRINT_V3 | Current Completed Plans | Complete | 100% |
@@ -22,6 +24,22 @@
 **Overall ecosystem completion: 0%**
 
 ---
+
+---
+
+## STATIC_TO_DYNAMIC_TRANSITION_PLAN
+
+**Location:** `Current Completed Plans/STATIC_TO_DYNAMIC_TRANSITION_PLAN.md`
+**Completion:** 100% (8/8 phases complete)
+**Delivered:** Full MariaDB multi-cube transition for Institute, Archive, and Nexus. Dynamic rendering via `ForeverBoxEngine`, component library `the_looms`, content blocks `the_fugue`, tile room `the_tile_room`, vector store `quiddity_sea`, drag-and-drop CMS, and vector search CLI `fbox-site-search`.
+
+---
+
+## NEXUS_BLUEPRINT_V1
+
+**Location:** `Current Completed Plans/NEXUS_BLUEPRINT_V1.md`
+**Completion:** 100% (All 6 tabs delivered)
+**Delivered:** Sovereign CMS Control Plane dashboard (`/nexus/index.php`) operating on `the_nexus_inner_cube_0_1_2` with sites, looms, ephemera, fugue, tileroom, and vectors tabs.
 
 ## CLASSIFICATION_AND_SEMANTIC_IMPROVEMENT_UPDATE_PLAN
 

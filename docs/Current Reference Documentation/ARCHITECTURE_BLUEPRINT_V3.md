@@ -54,11 +54,35 @@ This principle does **not** apply to Wolves — see §7. A Lead being the sole "
 
 ---
 
+
+### 1.2 Web Initiative Inner Cubes (CMS & Dynamic Engine)
+
+The website digital ecosystem operates on multi-cube database isolation:
+
+| Wing / Module | Database Name | Purpose |
+|:---|:---|:---|
+| **Initiative Primary Cube** | `the_everything_cube_0_0_0` | Shared component library (`the_looms`), Institute routes (`the_ephemera`), content blocks (`the_fugue`), media repository (`the_tile_room`), website vector index (`quiddity_sea`). |
+| **Nexus Control Plane** | `the_nexus_inner_cube_0_1_2` | Nexus dashboard tab routes & dynamic controller blocks. Registered in `quiddity_commons.connected_sites`. |
+| **Mythic Archive Cube** | `the_myth_inner_cube_0_2_0` | Archive page routes & content blocks. Rendered via `ForeverBoxEngine`. |
+
+
 ## 2. DATABASE SCHEMAS (DDL SPECIFICATIONS)
 
 All schemas target MariaDB 11.8+. InnoDB, `utf8mb4`/`utf8mb4_unicode_ci`. Native `VECTOR` type with HNSW index (MariaDB 11.3+).
 
-### 2.1 The Commons Schema (`quiddity_commons`)
+#
+### 1.2 Web Initiative Inner Cubes (CMS & Dynamic Engine)
+
+The website digital ecosystem operates on multi-cube database isolation:
+
+| Wing / Module | Database Name | Purpose |
+|:---|:---|:---|
+| **Initiative Primary Cube** | `the_everything_cube_0_0_0` | Shared component library (`the_looms`), Institute routes (`the_ephemera`), content blocks (`the_fugue`), media repository (`the_tile_room`), website vector index (`quiddity_sea`). |
+| **Nexus Control Plane** | `the_nexus_inner_cube_0_1_2` | Nexus dashboard tab routes & dynamic controller blocks. Registered in `quiddity_commons.connected_sites`. |
+| **Mythic Archive Cube** | `the_myth_inner_cube_0_2_0` | Archive page routes & content blocks. Rendered via `ForeverBoxEngine`. |
+
+
+## 2.1 The Commons Schema (`quiddity_commons`)
 
 ```sql
 CREATE DATABASE IF NOT EXISTS quiddity_commons CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -132,7 +156,19 @@ CREATE TABLE ingestion_dead_letter (
 ) ENGINE=InnoDB;
 ```
 
-### 2.2 The Sanctum Template Schema
+#
+### 1.2 Web Initiative Inner Cubes (CMS & Dynamic Engine)
+
+The website digital ecosystem operates on multi-cube database isolation:
+
+| Wing / Module | Database Name | Purpose |
+|:---|:---|:---|
+| **Initiative Primary Cube** | `the_everything_cube_0_0_0` | Shared component library (`the_looms`), Institute routes (`the_ephemera`), content blocks (`the_fugue`), media repository (`the_tile_room`), website vector index (`quiddity_sea`). |
+| **Nexus Control Plane** | `the_nexus_inner_cube_0_1_2` | Nexus dashboard tab routes & dynamic controller blocks. Registered in `quiddity_commons.connected_sites`. |
+| **Mythic Archive Cube** | `the_myth_inner_cube_0_2_0` | Archive page routes & content blocks. Rendered via `ForeverBoxEngine`. |
+
+
+## 2.2 The Sanctum Template Schema
 
 Run for each Lead: `agent_curator`, `agent_coach`, `agent_producer`. Director uses the same template plus §2.4.
 
@@ -247,7 +283,19 @@ CREATE TABLE wolf_working_memory (
 ) ENGINE=InnoDB;
 ```
 
-### 2.3 The Registry Schema (`agent_registry`)
+#
+### 1.2 Web Initiative Inner Cubes (CMS & Dynamic Engine)
+
+The website digital ecosystem operates on multi-cube database isolation:
+
+| Wing / Module | Database Name | Purpose |
+|:---|:---|:---|
+| **Initiative Primary Cube** | `the_everything_cube_0_0_0` | Shared component library (`the_looms`), Institute routes (`the_ephemera`), content blocks (`the_fugue`), media repository (`the_tile_room`), website vector index (`quiddity_sea`). |
+| **Nexus Control Plane** | `the_nexus_inner_cube_0_1_2` | Nexus dashboard tab routes & dynamic controller blocks. Registered in `quiddity_commons.connected_sites`. |
+| **Mythic Archive Cube** | `the_myth_inner_cube_0_2_0` | Archive page routes & content blocks. Rendered via `ForeverBoxEngine`. |
+
+
+## 2.3 The Registry Schema (`agent_registry`)
 
 ```sql
 CREATE DATABASE IF NOT EXISTS agent_registry CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -362,7 +410,19 @@ CREATE TABLE api_keys (
 ) ENGINE=InnoDB;
 ```
 
-### 2.4 Director Planning Tables (`agent_director` only)
+#
+### 1.2 Web Initiative Inner Cubes (CMS & Dynamic Engine)
+
+The website digital ecosystem operates on multi-cube database isolation:
+
+| Wing / Module | Database Name | Purpose |
+|:---|:---|:---|
+| **Initiative Primary Cube** | `the_everything_cube_0_0_0` | Shared component library (`the_looms`), Institute routes (`the_ephemera`), content blocks (`the_fugue`), media repository (`the_tile_room`), website vector index (`quiddity_sea`). |
+| **Nexus Control Plane** | `the_nexus_inner_cube_0_1_2` | Nexus dashboard tab routes & dynamic controller blocks. Registered in `quiddity_commons.connected_sites`. |
+| **Mythic Archive Cube** | `the_myth_inner_cube_0_2_0` | Archive page routes & content blocks. Rendered via `ForeverBoxEngine`. |
+
+
+## 2.4 Director Planning Tables (`agent_director` only)
 
 ```sql
 CREATE DATABASE IF NOT EXISTS agent_director CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
