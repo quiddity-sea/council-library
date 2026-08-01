@@ -1,113 +1,39 @@
 # Plans Progression
 
-*Last updated: 2026-07-26*
+*Regenerated 2026-08-01*
+
+**Overall completion (Started + Unstarted): 81%**
+
+| Plan | Folder | Done | Total | % |
+|------|--------|------|-------|---|
+| STAGE_1.5_BRIDGE_PLAN.md | Current Started Plans | 0 | 0 | 100% |
+| fbox-history-project-blueprint.md | Current Started Plans | 0 | 0 | 100% |
+| fbox-history-project-blueprint_v2.md | Current Started Plans | 0 | 0 | 100% |
+| fbox-history-project-blueprint_v3.md | Current Started Plans | 0 | 0 | 100% |
+| fbox-history-project-blueprint_v4.md | Current Started Plans | 0 | 0 | 100% |
+| fbox-history-project-blueprint_v5.md | Current Started Plans | 0 | 0 | 100% |
+| fbox-history-project-blueprint_v6.md | Current Started Plans | 0 | 0 | 100% |
+| plutus_onboarding_guide.md | Current Started Plans | 0 | 0 | 100% |
+| plutus_user_manual.md | Current Started Plans | 0 | 0 | 100% |
+| CLASSIFICATION_AND_SEMANTIC_IMPROVEMENT_UPDATE_PLAN.md | Current Completed Plans | 6 | 6 | 100% |
+| HISTORY_ARCHIVE_UPDATE_PLAN.md | Current Completed Plans | 0 | 0 | 100% |
+| QWEN_PROXY_DYNAMIC_SOUL_INTEGRATION_PLAN.md | Current Completed Plans | 9 | 9 | 100% |
+| STAGE_1_FINAL_COMPLETION_PLAN.md | Current Completed Plans | 3 | 3 | 100% |
+| WOLF_FIX_PLAN_SKILLS_BASED.md | Current Completed Plans | 12 | 12 | 100% |
+| WOLF_UPGRADE_BLUEPRINT_V3.md | Current Completed Plans | 14 | 14 | 100% |
+| COUNCIL_LIBRARY_HANDBOOK_V1.md | archives | 0 | 0 | 100% |
+| MASTER_BRIEFING_V6.md | archives | 0 | 0 | 100% |
+| Souls Configuration Canvas - V1.md | archives | 0 | 0 | 100% |
+| Souls Configuration Canvas - V2.md | archives | 0 | 0 | 100% |
+| plutus_update_plan.md | Current Started Plans | 120 | 123 | 98% |
+| NEXUS_BLUEPRINT_V1.md | Current Completed Plans | 5 | 11 | 45% |
+| plutus_build_blueprint.md | Current Started Plans | 0 | 26 | 0% |
+| STATIC_TO_DYNAMIC_TRANSITION_PLAN.md | Current Completed Plans | 0 | 8 | 0% |
+| dynamic-souls-blueprint-v1.md | Current Completed Plans | 0 | 7 | 0% |
+| COUNCIL_CRON_JOBS_ANALYSIS.md | Current Unstarted Plans | 0 | 8 | 0% |
+| WOLFPACK_UPGRADE_BLUEPRINT_V1.md | archives | 0 | 12 | 0% |
+| WOLF_UPGRADE_BLUEPRINT_V2.md | archives | 0 | 12 | 0% |
 
 ---
 
-## Overview
-
-| Plan | Location | Status | Completion |
-|------|----------|--------|------------|
-| STATIC_TO_DYNAMIC_TRANSITION_PLAN | Current Completed Plans | Complete | 100% |
-| NEXUS_BLUEPRINT_V1 | Current Completed Plans | Complete | 100% |
-| CLASSIFICATION_AND_SEMANTIC_IMPROVEMENT_UPDATE_PLAN | Current Completed Plans | Complete | 100% |
-| WOLF_FIX_PLAN_SKILLS_BASED | Current Completed Plans | Complete | 100% |
-| WOLF_UPGRADE_BLUEPRINT_V3 | Current Completed Plans | Complete | 100% |
-| STAGE_1_FINAL_COMPLETION_PLAN | Current Unstarted Plans | In Progress | 0% |
-| COUNCIL_LIBRARY_HANDBOOK_V1 | archives | Archived | 0% |
-| MASTER_BRIEFING_V6 | archives | Archived | 0% |
-| Souls Configuration Canvas - V1 | archives | Archived | 0% |
-| Souls Configuration Canvas - V2 | archives | Archived | 0% |
-| WOLFPACK_UPGRADE_BLUEPRINT_V1 | archives | Archived | 0% |
-| WOLF_UPGRADE_BLUEPRINT_V2 | archives | Archived | 0% |
-
-**Overall ecosystem completion: 0%**
-
----
-
----
-
-## STATIC_TO_DYNAMIC_TRANSITION_PLAN
-
-**Location:** `Current Completed Plans/STATIC_TO_DYNAMIC_TRANSITION_PLAN.md`
-**Completion:** 100% (8/8 phases complete)
-**Delivered:** Full MariaDB multi-cube transition for Institute, Archive, and Nexus. Dynamic rendering via `ForeverBoxEngine`, component library `the_looms`, content blocks `the_fugue`, tile room `the_tile_room`, vector store `quiddity_sea`, drag-and-drop CMS, and vector search CLI `fbox-site-search`.
-
----
-
-## NEXUS_BLUEPRINT_V1
-
-**Location:** `Current Completed Plans/NEXUS_BLUEPRINT_V1.md`
-**Completion:** 100% (All 6 tabs delivered)
-**Delivered:** Sovereign CMS Control Plane dashboard (`/nexus/index.php`) operating on `the_nexus_inner_cube_0_1_2` with sites, looms, ephemera, fugue, tileroom, and vectors tabs.
-
-## CLASSIFICATION_AND_SEMANTIC_IMPROVEMENT_UPDATE_PLAN
-
-**Location:** `Current Completed Plans/CLASSIFICATION_AND_SEMANTIC_IMPROVEMENT_UPDATE_PLAN.md`
-**Completion: 100% (6/6 tasks done)
-
----
-
-## WOLF_FIX_PLAN_SKILLS_BASED
-
-**Location:** `Current Completed Plans/WOLF_FIX_PLAN_SKILLS_BASED.md`
-**Completion: 100% (12/12 tasks done)
-
----
-
-## WOLF_UPGRADE_BLUEPRINT_V3
-
-**Location:** `Current Completed Plans/WOLF_UPGRADE_BLUEPRINT_V3.md`
-**Completion: 100% (14/14 tasks done)
-
----
-
-## STAGE_1_FINAL_COMPLETION_PLAN
-
-**Location:** `Current Unstarted Plans/STAGE_1_FINAL_COMPLETION_PLAN.md`
-**Completion: 0% (0/0 tasks done)
-
----
-
-## COUNCIL_LIBRARY_HANDBOOK_V1
-
-**Location:** `archives/COUNCIL_LIBRARY_HANDBOOK_V1.md`
-**Status:** Archived
-
----
-
-## MASTER_BRIEFING_V6
-
-**Location:** `archives/MASTER_BRIEFING_V6.md`
-**Status:** Archived
-
----
-
-## Souls Configuration Canvas - V1
-
-**Location:** `archives/Souls Configuration Canvas - V1.md`
-**Status:** Archived
-
----
-
-## Souls Configuration Canvas - V2
-
-**Location:** `archives/Souls Configuration Canvas - V2.md`
-**Status:** Archived
-
----
-
-## WOLFPACK_UPGRADE_BLUEPRINT_V1
-
-**Location:** `archives/WOLFPACK_UPGRADE_BLUEPRINT_V1.md`
-**Status:** Archived
-
----
-
-## WOLF_UPGRADE_BLUEPRINT_V2
-
-**Location:** `archives/WOLF_UPGRADE_BLUEPRINT_V2.md`
-**Status:** Archived
-
----
-
+*Auto-generated by update-plans-progression. Do not edit by hand.*
