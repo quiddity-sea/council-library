@@ -2,7 +2,7 @@
 
 *Regenerated 2026-08-01*
 
-**Overall (Started+Unstarted): 84%**
+**Overall (Started+Unstarted): 85%**
 
 | Plan | Folder | Done | Total | % |
 |------|--------|------|-------|---|
@@ -14,7 +14,7 @@
 | fbox-history-project-blueprint_v5.md | Current Started Plans | 0 | 0 | 100% |
 | fbox-history-project-blueprint_v6.md | Current Started Plans | 0 | 0 | 100% |
 | plutus_onboarding_guide.md | Current Started Plans | 0 | 0 | 100% |
-| plutus_phase2_upgrades_plan.md | Current Started Plans | 20 | 20 | 100% |
+| plutus_phase2_upgrades_plan.md | Current Started Plans | 25 | 25 | 100% |
 | plutus_user_manual.md | Current Started Plans | 0 | 0 | 100% |
 | CLASSIFICATION_AND_SEMANTIC_IMPROVEMENT_UPDATE_PLAN.md | Current Completed Plans | 6 | 6 | 100% |
 | HISTORY_ARCHIVE_UPDATE_PLAN.md | Current Completed Plans | 0 | 0 | 100% |

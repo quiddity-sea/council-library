@@ -438,3 +438,16 @@ The code that consumes these is documented in the Files section below; the crede
 Block 2 assumes Block 1 is in place. The MARK SPENT prompt and the "projected + actual amount" pattern on transactions are Block 1 features that Block 2's complete_task handler calls internally. If Block 2 is implemented before Block 1, the `complete_task` endpoint should still work but will create transactions without the `projected_amount` column (the column won't exist yet — it will be missing rather than NULL and fail the INSERT). **Implement Block 1 first, or implement them together.**
 
 ---
+
+
+## Block 1 Addendum — Planned Income Support (requested 2026-08-01)
+
+*Added after Block 1 review: planned income was storable but misreported as spending. Fixed so planned income and planned spending are reported separately.*
+
+- [x] Dashboard splits planned totals by type: `planned_total` = planned expenses only (backward compatible), new `planned_income_total` = planned income
+- [x] Frontend PLANNED panel renders two sections: PLANNED SPENDING (red/neutral rows) and PLANNED INCOME (green rows with + prefix)
+- [x] Net figure in the panel header: `NET +£x.xx (IN £y / OUT £z)`
+- [x] Planned income does NOT count against budget target caps (only spent expenses do — unchanged)
+- [x] E2E suite still 7/7; PHPUnit green; PHPStan 0
+
+**Implementation note:** *Implemented 2026-08-01, commit `c963f86` (site). Verified live: planned expense £15.50 / planned income £300.00 reported separately on overview and personal/household tabs.*
