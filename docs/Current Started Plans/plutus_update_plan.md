@@ -478,3 +478,66 @@ If any phase introduces critical regression:
 **Not applicable**:
 - `Optimize Chart.js instances (destroy before recreate)` — Chart.js is loaded but never instantiated; no chart lifecycle exists to optimise.
 
+
+
+---
+
+## Phase 6 — Period Selector Submenu (New Feature, requested 2026-08-01)
+
+*Requested by Merrill Leo during the week-of-use review kickoff. Not yet implemented — this is the plan for it.*
+
+### Problem
+
+The dashboard timeframe filter only offers DAY / WEEK / MONTH / YEAR and always filters against the **current** day, week, month or year. On the 1st of a new month the default MONTH view shows an empty dashboard even though historical data exists (e.g. 1 Aug 2026 shows nothing while July has 185 transactions). There is no way to browse a specific past period.
+
+### Proposed Behaviour
+
+Add a **second selector** immediately beside the existing DAY / WEEK / MONTH / YEAR dropdown. Its contents depend on the granularity chosen:
+
+| First selector | Second selector shows | Example entries |
+|----------------|----------------------|-----------------|
+| DAY | List of specific days | 2026-07-31, 2026-07-30, ... |
+| WEEK | List of ISO week numbers | W30 2026, W29 2026, ... |
+| MONTH | List of months | JUL 2026, JUN 2026, ... |
+| YEAR | Last 5 years and next 5 years | 2021 → 2031 |
+
+The dashboard queries (overview totals, personal/household tabs, category breakdown, recent feed, improvements) adapt to the **selected** period rather than the current one. Selecting JUL 2026 filters every query to that month.
+
+### Open Decision (required before implementation)
+
+For DAY and WEEK, should the list be built from:
+- **(a)** periods that actually contain data (distinct days/weeks with transactions, oldest → newest), or
+- **(b)** a fixed rolling window (last 30 days / last 8 weeks) regardless of data?
+
+Months and years are clear either way. **Merrill to confirm.**
+
+### Tasks
+
+- [ ] Add `period` parameter to `DashboardController::getDashboard` — when present, build `$dateFilter` from the selected period:
+  - `period=YYYY-MM-DD` → `DATE(t.date) = 'YYYY-MM-DD'`
+  - `period=YYYY-WNN` (ISO week) → `YEARWEEK(t.date, 1) = YEARWEEK('YYYY-MM-DD', 1)` where the date is the week's Monday
+  - `period=YYYY-MM` → `YEAR(t.date) = YYYY AND MONTH(t.date) = MM`
+  - `period=YYYY` → `YEAR(t.date) = YYYY`
+  - Absent `period` → current behaviour (backward compatible)
+- [ ] Extend an API endpoint (e.g. `get_metadata` or a new `get_periods`) to return available periods per granularity from the transaction data, plus last/next 5 years
+- [ ] Frontend (`app.js`): render the second selector beside the existing timeframe dropdown; rebuild its options whenever granularity changes; pass `timeframe` + `period` in the dashboard request
+- [ ] Exports (CSV/JSON/PDF): honour the same `period` parameter so exports match the on-screen filter
+- [ ] Persist the selected period in `sessionStorage` alongside `plutus_current_timeframe` so refresh keeps the view
+- [ ] Test: select each granularity + period and verify totals/transactions/feed match; verify default view unchanged when no period selected
+
+### Files
+
+- `api/controllers/DashboardController.php`
+- `api/controllers/ExportController.php`
+- `api/controllers/ObjectController.php` (or new `get_periods` handler)
+- `api/routes.php`
+- `assets/js/app.js`
+
+### Acceptance Criteria
+
+- [ ] Selecting a specific month/week/day/year filters all dashboard queries to that period
+- [ ] The second selector options change correctly when the granularity changes
+- [ ] Exports match the selected period
+- [ ] No period selected → identical behaviour to today
+
+---
