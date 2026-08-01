@@ -2,7 +2,7 @@
 
 *Regenerated 2026-08-01*
 
-**Overall (Started+Unstarted): 73%**
+**Overall (Started+Unstarted): 79%**
 
 | Plan | Folder | Done | Total | % |
 |------|--------|------|-------|---|
@@ -26,9 +26,9 @@
 | Souls Configuration Canvas - V1.md | archives | 0 | 0 | 100% |
 | Souls Configuration Canvas - V2.md | archives | 0 | 0 | 100% |
 | plutus_update_plan.md | Current Started Plans | 131 | 133 | 98% |
+| plutus_phase2_upgrades_plan.md | Current Started Plans | 10 | 20 | 50% |
 | NEXUS_BLUEPRINT_V1.md | Current Completed Plans | 5 | 11 | 45% |
 | plutus_build_blueprint.md | Current Started Plans | 0 | 26 | 0% |
-| plutus_phase2_upgrades_plan.md | Current Started Plans | 0 | 20 | 0% |
 | STATIC_TO_DYNAMIC_TRANSITION_PLAN.md | Current Completed Plans | 0 | 8 | 0% |
 | dynamic-souls-blueprint-v1.md | Current Completed Plans | 0 | 7 | 0% |
 | COUNCIL_CRON_JOBS_ANALYSIS.md | Current Unstarted Plans | 0 | 8 | 0% |

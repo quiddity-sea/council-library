@@ -155,16 +155,20 @@ Existing planned transactions can be edited (change projected amount, date, cate
 
 ### Acceptance Criteria
 
-- [ ] A transaction can be created with `status = 'planned'` and `projected_amount` set
-- [ ] A planned transaction can be converted to spent by setting `actual_amount` without losing the projected amount
-- [ ] Both values persist and are visible in the UI after marking spent
-- [ ] Normal unplanned "LOG TRANSACTION" flow is unaffected and creates `status = 'spent'` with no projected amount
-- [ ] The dashboard returns separate `transactions` (spent) and `planned_transactions` (planned) arrays
-- [ ] Budget `cost_paid`/`cost_remaining` is calculated only from spent transactions, ignoring planned ones
-- [ ] The budget panel shows PROJECTED vs ACTUAL vs REMAINING for the selected period
-- [ ] The Phase 6 period selector filters both planned and spent transactions by the selected period
-- [ ] All existing tests (PHPUnit, PHPStan, Vitest, Playwright) pass after the changes
-- [ ] Staging environment updated and smoke tests pass
+- [x] A transaction can be created with `status = 'planned'` and `projected_amount` set
+- [x] A planned transaction can be converted to spent by setting `actual_amount` without losing the projected amount
+- [x] Both values persist and are visible in the UI after marking spent
+- [x] Normal unplanned "LOG TRANSACTION" flow is unaffected and creates `status = 'spent'` with no projected amount
+- [x] The dashboard returns separate `transactions` (spent) and `planned_transactions` (planned) arrays
+- [x] Budget `cost_paid`/`cost_remaining` is calculated only from spent transactions, ignoring planned ones
+- [x] The budget panel shows PROJECTED vs ACTUAL vs REMAINING for the selected period
+- [x] The Phase 6 period selector filters both planned and spent transactions by the selected period
+- [x] All existing tests (PHPUnit, PHPStan, Vitest, Playwright) pass after the changes
+- [x] Staging environment updated and smoke tests pass
+
+### Implementation Note
+
+*Implemented 2026-08-01. Verified: planned tx creates with projected_amount + NULL amount; mark-spent preserves both values; budget totals count spent only; dashboard returns planned_total/planned_transactions; E2E planned.spec passes (6/6 total). Commit `1b53773`.*
 
 ### Files
 
