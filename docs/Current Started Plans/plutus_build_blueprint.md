@@ -610,3 +610,73 @@ client -> api.php (legacy) or api/v1.php (versioned)
 ---
 
 **End of Build Blueprint — 2026 Update**
+
+---
+
+## Architecture Update — Phase 2 Upgrades (2026-08-01)
+
+*This section documents the Phase 2 architectural changes. It supersedes earlier descriptions where they differ.*
+
+### Database Changes
+
+**`transactions` table — planned transaction support:**
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `projected_amount` | DECIMAL(10,2) NULL | The planned/projected cost when the transaction was pre-planned |
+| `status` | ENUM('planned','spent') DEFAULT 'spent' | Whether the row is a forward plan or actual spend |
+
+`amount` was changed from NOT NULL to NULL so planned rows can exist without an actual cost. Planned rows: `status='planned'`, `amount=NULL`, `projected_amount` set. Spent rows from a plan: `status='spent'`, `amount` = actual, `projected_amount` retained. Normal unplanned transactions: `status='spent'`, `projected_amount=NULL` (fully backward compatible).
+
+**`tasks` table — spend-task support:**
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `type` | ENUM(...,'spend') | New 'spend' value for spend-tasks |
+| `projected_cost` | DECIMAL(10,2) NULL | Projected cost of the recurring spend |
+| `actual_cost` | DECIMAL(10,2) NULL | Actual cost when marked spent |
+| `spent_at` | DATETIME NULL | When the task was completed |
+| `recurrence_type` | ENUM('none','daily','weekly','biweekly','monthly','yearly') | Recurrence frequency |
+| `recurrence_days` | VARCHAR(14) NULL | Comma-separated weekdays (weekly only) |
+| `recurrence_time` | TIME NULL | Time of day |
+| `recurrence_count` | INT UNSIGNED NULL | NULL = continuous, N = fixed instances |
+| `recurrence_completed` | INT UNSIGNED DEFAULT 0 | Completed instances counter |
+| `paused_at` | DATETIME NULL | Pause state |
+| `google_calendar_id` / `google_recurring_id` | VARCHAR(255) NULL | Google Calendar event references |
+
+**`users` table:** `google_access_token`, `google_refresh_token`, `google_token_expires` columns store OAuth credentials (were already present from Phase 4 groundwork).
+
+### New Controllers and Services
+
+| File | Purpose |
+|------|---------|
+| `api/controllers/TaskController.php` | Spend-task lifecycle: complete/pause/resume/stop, next-instance generation, google_auth + oauth_callback |
+| `api/utils/GoogleCalendarService.php` | Google Calendar API v3 wrapper: OAuth flow, token storage/refresh, recurring event CRUD, RRULE builder. Degrades gracefully (`isConfigured()` false) when credentials absent |
+| `api/controllers/PeriodsController.php` | Phase 6 period lists (data-driven days/weeks/months, last/next 5 years) |
+
+### New API Actions
+
+| Action | Method | Purpose |
+|--------|--------|---------|
+| `complete_task` | POST | Record actual cost, optionally create transaction (projected + actual), generate next recurrence instance |
+| `pause_task` | POST | Set paused_at, remove Google recurrence rule |
+| `resume_task` | POST | Clear paused_at, re-add Google recurrence rule |
+| `stop_task` | POST | Set status='cancelled', delete Google event series |
+| `google_auth` | GET | Return OAuth consent URL (auth required) |
+| `oauth_callback` | GET | Exchange OAuth code for tokens, store, redirect |
+| `get_periods` | GET | Period lists per granularity (Phase 6) |
+
+### Dashboard Response Additions
+
+| Field | Meaning |
+|-------|---------|
+| `planned_total` | SUM of projected_amount for planned EXPENSE transactions in period |
+| `planned_income_total` | SUM of projected_amount for planned INCOME transactions in period |
+| `planned_transactions` | Array of planned transaction rows (both types, distinguished by `type`) |
+
+### Key Logic Notes
+
+- **Budget totals (`updateBudgetTotals`)**: only `status='spent'` transactions count toward cost_paid. Planned transactions never affect budget position.
+- **complete_task next-instance generation**: increments recurrence_completed; creates a new task row for the next occurrence when recurrence is continuous or count not reached. Weekly-with-days computes the strictly-next matching weekday.
+- **Validation**: full required-field validation applies on CREATE only; partial updates (mark-spent, single-field edits) skip base required checks. Planned transactions require projected_amount; spent transactions require amount.
+- **Google credentials**: read from environment variables `PLUTUS_GOOGLE_CLIENT_ID` / `PLUTUS_GOOGLE_CLIENT_SECRET` only (no hardcoded constants). OAuth redirect URI is `https://<host>/api.php?action=oauth_callback`. When unconfigured, all GoogleCalendarService methods return false and the UI shows CALENDAR: DISCONNECTED.

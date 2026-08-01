@@ -465,3 +465,79 @@ A weekly CSV export runs automatically (Sundays 04:00) and is written to `/forev
 ---
 
 *End of What's New — 2026 Update*
+
+---
+
+## What's New — Phase 2 Upgrades (2026-08-01)
+
+*This chapter covers the Phase 2 upgrade blocks: planned transactions (projected vs actual), planned income, and the spend-based task manager with Google Calendar integration.*
+
+### Planned Transactions
+
+The system now lets you plan spending in advance instead of only logging it after the fact.
+
+**Creating a planned transaction:**
+1. In a personal or household tab, click **PLAN TRANSACTION** (next to LOG TRANSACTION).
+2. Enter the name (e.g. "Train to Cardiff"), the **projected cost** (e.g. £15.50), the date you expect to spend it, and the budget.
+3. Save. The transaction appears in the **PLANNED** panel at the bottom of the transaction log with a £ projected amount and a MARK SPENT action.
+
+**Marking a planned transaction as spent:**
+1. On the day, click **MARK SPENT** on the planned item.
+2. Enter the **actual cost** (the projected amount is pre-filled as a suggestion — edit it to what you really paid, e.g. £18.20).
+3. Save. The transaction moves from PLANNED to the main log with **both values preserved**: the projected cost stays visible alongside the actual cost.
+
+Planned transactions do **not** affect budget totals — only spent transactions count toward your budget's cost paid. This means you can build a forward plan without it distorting your current budget position.
+
+### Planned Income
+
+Planned income works the same way but is reported separately.
+
+- Create a planned transaction with type **income** (e.g. "Freelance invoice" £300, expected Friday).
+- The PLANNED panel splits into two sections: **PLANNED SPENDING** and **PLANNED INCOME** (green rows with a + prefix).
+- The panel header shows the **net figure**: `NET +£200.00 (IN £300.00 / OUT £100.00)` — green when your forward plan is in surplus, red when in deficit.
+
+This gives a complete forward picture: "I know £300 is coming in Friday, so I can plan the £250 shopping trip."
+
+### Spend-Based Task Manager
+
+For habitual, recurring spending — "cake shop reductions every Thursday 3:30pm", "travel card top-up every Monday" — you can create a **spend task** that reminds you, tracks the projected cost, and links to the transaction when you actually spend.
+
+**Creating a spend task:**
+1. Click **ADD SPEND TASK** in the transaction tab sidebar.
+2. Enter the task name, the projected cost, the budget it relates to, and the recurrence:
+   - **Recurrence type**: none / daily / weekly / biweekly / monthly / yearly
+   - **Days** (weekly only): tick the days of the week (e.g. Thursday)
+   - **Time**: the time of day the task happens (e.g. 15:30)
+   - **Continuous or fixed**: tick Continuous for indefinite recurrence, or untick and enter a number of instances
+3. Save. The task appears in the **UPCOMING TASKS** panel with its cost, schedule and status.
+
+**Completing a spend task (MARK SPENT):**
+1. On the day, click **MARK SPENT** on the task.
+2. Enter the actual cost (projected pre-filled).
+3. Confirm you want to create a transaction. The system records the actual cost, creates the transaction (with both projected and actual values), and **automatically creates the next instance** — next Thursday's task already exists, you never re-enter it.
+
+**Task controls:**
+- **PAUSE** — halts future instances (the task stays, no new ones are generated). The task shows `[PAUSED]`.
+- **RESUME** — restarts recurrence from the next pending instance.
+- **STOP** — ends the task permanently (status becomes cancelled).
+
+### Google Calendar Integration
+
+Spend tasks can sync to your Google Calendar on a dedicated Plutus calendar, so reminders appear on all your devices.
+
+**Status:** The code is fully in place, but it activates only when the system administrator has configured Google Cloud credentials (OAuth client ID and secret as environment variables `PLUTUS_GOOGLE_CLIENT_ID` and `PLUTUS_GOOGLE_CLIENT_SECRET`, with the OAuth redirect URI pointing to `/api.php?action=oauth_callback`). Until then, the UPCOMING TASKS panel shows `CALENDAR: DISCONNECTED`.
+
+Once configured:
+- Creating a recurring spend task creates a recurring Google Calendar event on the Plutus calendar.
+- Completing, pausing, resuming or stopping a task updates the corresponding calendar event.
+- The dashboard header shows `CALENDAR: CONNECTED` when tokens are stored.
+
+### Phase 6 — Period Selector (browse any period)
+
+The timeframe buttons (DAY/WEEK/MONTH/YEAR) are now accompanied by a **period selector** dropdown. Its contents adapt to the chosen granularity:
+- **DAY**: the most recent days with transactions
+- **WEEK**: ISO week numbers with transactions (e.g. W31 2026)
+- **MONTH**: months with transactions (e.g. JUL 2026)
+- **YEAR**: the last 5 years and the next 5 years
+
+Selecting a period filters every dashboard query (totals, transaction log, category breakdown, planned panel) to that period. This is how you view a past month — e.g. switch to MONTH, then pick JUL 2026 from the selector.

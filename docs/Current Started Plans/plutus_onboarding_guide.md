@@ -90,3 +90,27 @@ sudo -u www-data bash scripts/smoke_staging.sh   # must be 7/7 green
 | Vite build fails | rebuild from `src/` then re-copy `dist/` to the site |
 
 *Welcome aboard. Neon green on charcoal. Scanlines always watching.*
+
+
+## Phase 2 Additions (2026-08)
+
+### New architecture elements
+
+- `api/controllers/TaskController.php` — spend-task lifecycle (complete/pause/resume/stop), OAuth handlers
+- `api/utils/GoogleCalendarService.php` — Google Calendar v3 wrapper (OAuth, token refresh, recurring events). Requires `PLUTUS_GOOGLE_CLIENT_ID` / `PLUTUS_GOOGLE_CLIENT_SECRET` env vars; degrades gracefully when absent
+- `api/controllers/PeriodsController.php` — period selector lists (Phase 6)
+
+### Schema notes
+
+- `transactions` gained `projected_amount` + `status` (planned/spent); `amount` is nullable
+- `tasks` gained spend-task columns: `projected_cost`, `actual_cost`, `spent_at`, `recurrence_type/days/time/count/completed`, `paused_at`, google calendar IDs; `type` enum includes `'spend'`
+- `users` has `google_access_token` / `google_refresh_token` / `google_token_expires`
+
+### Gotchas
+
+- `app.js` is CRLF line endings — normalise before patching (see above)
+- All site files www-data-owned; edit via /tmp patch script → `sudo cp` → `sudo -u www-data python3` → `sudo rm`
+- `response()` util takes ONE argument (data only); set `http_response_code()` separately for error statuses
+- Budget totals update only from `status='spent'` transactions — planned rows never touch budget position
+- Google Calendar cannot be end-to-end tested until credentials exist; verify `google_auth` returns `GOOGLE_NOT_CONFIGURED` gracefully otherwise
+- Staging rsync overwrites `db.php` — always re-point to `plutus_thoughts_staging` after sync
