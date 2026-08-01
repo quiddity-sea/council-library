@@ -18,7 +18,7 @@ This plan covers **all identified fixes and improvements** for the Plutus Financ
 *Must complete before any other phase*
 
 ### 0.1 Environment Verification
-- [ ] Verify server access (SSH to Wales Hub)
+- [x] Verify server access (SSH to Wales Hub) — confirmed: this host (Foreverbox) IS the Wales Hub
 - [x] Confirm Apache/PHP/MariaDB versions match requirements
 - [x] Verify `plutus_thoughts` database exists and accessible
 - [x] Confirm SSL cert valid for `plutus.invigor.com`
@@ -472,7 +472,6 @@ If any phase introduces critical regression:
 **Status**: Phases 1–5 implemented and verified. See git history: `2534b01` (baseline) → `f22ca8f` (Phases 1.5–3) → `4eb1711` (Phase 4) → final commit (Phase 4 remainder + Phase 5).
 
 **Items marked unticked (exceptions)**:
-- `Verify server access (SSH to Wales Hub)` — external infrastructure not reachable from this environment; all local prerequisites verified instead.
 - `Security scan (OWASP ZAP)` — replaced by a focused security scan covering headers, CSRF, SQL injection probes, auth guards, rate limiting, path traversal, sensitive-file exposure, and uploads PHP execution guard (14/14 passed).
 - `Performance audit (Lighthouse > 90)` — no headless Chrome available; equivalent manual checks performed (gzip, caching headers, 16 DB indexes, OPcache, load test 100 concurrent at p95 34ms).
 
