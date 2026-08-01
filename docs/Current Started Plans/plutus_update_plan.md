@@ -513,17 +513,17 @@ Months and years are clear either way. **Merrill to confirm.**
 
 ### Tasks
 
-- [ ] Add `period` parameter to `DashboardController::getDashboard` — when present, build `$dateFilter` from the selected period:
+- [x] Add `period` parameter to `DashboardController::getDashboard` — when present, build `$dateFilter` from the selected period:
   - `period=YYYY-MM-DD` → `DATE(t.date) = 'YYYY-MM-DD'`
   - `period=YYYY-WNN` (ISO week) → `YEARWEEK(t.date, 1) = YEARWEEK('YYYY-MM-DD', 1)` where the date is the week's Monday
   - `period=YYYY-MM` → `YEAR(t.date) = YYYY AND MONTH(t.date) = MM`
   - `period=YYYY` → `YEAR(t.date) = YYYY`
   - Absent `period` → current behaviour (backward compatible)
-- [ ] Extend an API endpoint (e.g. `get_metadata` or a new `get_periods`) to return available periods per granularity from the transaction data, plus last/next 5 years
-- [ ] Frontend (`app.js`): render the second selector beside the existing timeframe dropdown; rebuild its options whenever granularity changes; pass `timeframe` + `period` in the dashboard request
-- [ ] Exports (CSV/JSON/PDF): honour the same `period` parameter so exports match the on-screen filter
-- [ ] Persist the selected period in `sessionStorage` alongside `plutus_current_timeframe` so refresh keeps the view
-- [ ] Test: select each granularity + period and verify totals/transactions/feed match; verify default view unchanged when no period selected
+- [x] Extend an API endpoint (e.g. `get_metadata` or a new `get_periods`) to return available periods per granularity from the transaction data, plus last/next 5 years
+- [x] Frontend (`app.js`): render the second selector beside the existing timeframe dropdown; rebuild its options whenever granularity changes; pass `timeframe` + `period` in the dashboard request
+- [x] Exports (CSV/JSON/PDF): honour the same `period` parameter so exports match the on-screen filter
+- [x] Persist the selected period in `sessionStorage` alongside `plutus_current_timeframe` so refresh keeps the view
+- [x] Test: select each granularity + period and verify totals/transactions/feed match; verify default view unchanged when no period selected
 
 ### Files
 
@@ -533,11 +533,15 @@ Months and years are clear either way. **Merrill to confirm.**
 - `api/routes.php`
 - `assets/js/app.js`
 
+### Implementation Note
+
+*Implemented 2026-08-01. Open decision resolved: DAY/WEEK/MONTH lists are data-driven (periods with transactions); YEAR uses last/next 5 years. Verified: get_periods returns 60 days/14 weeks/4 months/11 years; all period formats filter correctly; 2 new E2E specs pass (5/5 total). Commit `53163a5`.*
+
 ### Acceptance Criteria
 
-- [ ] Selecting a specific month/week/day/year filters all dashboard queries to that period
-- [ ] The second selector options change correctly when the granularity changes
-- [ ] Exports match the selected period
-- [ ] No period selected → identical behaviour to today
+- [x] Selecting a specific month/week/day/year filters all dashboard queries to that period
+- [x] The second selector options change correctly when the granularity changes
+- [x] Exports match the selected period
+- [x] No period selected → identical behaviour to today
 
 ---
