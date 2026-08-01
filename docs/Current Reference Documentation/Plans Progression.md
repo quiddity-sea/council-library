@@ -14,7 +14,7 @@
 | fbox-history-project-blueprint_v5.md | Current Started Plans | 0 | 0 | 100% |
 | fbox-history-project-blueprint_v6.md | Current Started Plans | 0 | 0 | 100% |
 | plutus_onboarding_guide.md | Current Started Plans | 0 | 0 | 100% |
-| plutus_phase2_upgrades_plan.md | Current Completed Plans | 20 | 20 | 100% |
+| plutus_phase2_upgrades_plan.md | Current Started Plans | 20 | 20 | 100% |
 | plutus_user_manual.md | Current Started Plans | 0 | 0 | 100% |
 | CLASSIFICATION_AND_SEMANTIC_IMPROVEMENT_UPDATE_PLAN.md | Current Completed Plans | 6 | 6 | 100% |
 | HISTORY_ARCHIVE_UPDATE_PLAN.md | Current Completed Plans | 0 | 0 | 100% |
@@ -22,7 +22,6 @@
 | STAGE_1_FINAL_COMPLETION_PLAN.md | Current Completed Plans | 3 | 3 | 100% |
 | WOLF_FIX_PLAN_SKILLS_BASED.md | Current Completed Plans | 12 | 12 | 100% |
 | WOLF_UPGRADE_BLUEPRINT_V3.md | Current Completed Plans | 14 | 14 | 100% |
-| plutus_phase2_upgrades_plan.md | Current Completed Plans | 20 | 20 | 100% |
 | COUNCIL_LIBRARY_HANDBOOK_V1.md | archives | 0 | 0 | 100% |
 | MASTER_BRIEFING_V6.md | archives | 0 | 0 | 100% |
 | Souls Configuration Canvas - V1.md | archives | 0 | 0 | 100% |
@@ -35,10 +34,6 @@
 | COUNCIL_CRON_JOBS_ANALYSIS.md | Current Unstarted Plans | 0 | 8 | 0% |
 | WOLFPACK_UPGRADE_BLUEPRINT_V1.md | archives | 0 | 12 | 0% |
 | WOLF_UPGRADE_BLUEPRINT_V2.md | archives | 0 | 12 | 0% |
-
-## Relocations
-
-MOVED: plutus_phase2_upgrades_plan.md -> Completed
 
 ---
 *Auto-generated. Do not edit by hand.*
