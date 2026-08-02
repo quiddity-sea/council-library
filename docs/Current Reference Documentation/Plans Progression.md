@@ -1,21 +1,14 @@
 # Plans Progression
 
-*Regenerated 2026-08-01*
+*Regenerated 2026-08-02*
 
-**Overall (Started+Unstarted): 85%**
+**Overall (Started+Unstarted): 99%**
 
 | Plan | Folder | Done | Total | % |
 |------|--------|------|-------|---|
 | STAGE_1.5_BRIDGE_PLAN.md | Current Started Plans | 0 | 0 | 100% |
-| fbox-history-project-blueprint.md | Current Started Plans | 0 | 0 | 100% |
-| fbox-history-project-blueprint_v2.md | Current Started Plans | 0 | 0 | 100% |
-| fbox-history-project-blueprint_v3.md | Current Started Plans | 0 | 0 | 100% |
-| fbox-history-project-blueprint_v4.md | Current Started Plans | 0 | 0 | 100% |
-| fbox-history-project-blueprint_v5.md | Current Started Plans | 0 | 0 | 100% |
 | fbox-history-project-blueprint_v6.md | Current Started Plans | 0 | 0 | 100% |
-| plutus_onboarding_guide.md | Current Started Plans | 0 | 0 | 100% |
 | plutus_phase2_upgrades_plan.md | Current Started Plans | 25 | 25 | 100% |
-| plutus_user_manual.md | Current Started Plans | 0 | 0 | 100% |
 | CLASSIFICATION_AND_SEMANTIC_IMPROVEMENT_UPDATE_PLAN.md | Current Completed Plans | 6 | 6 | 100% |
 | HISTORY_ARCHIVE_UPDATE_PLAN.md | Current Completed Plans | 0 | 0 | 100% |
 | QWEN_PROXY_DYNAMIC_SOUL_INTEGRATION_PLAN.md | Current Completed Plans | 9 | 9 | 100% |
@@ -26,9 +19,13 @@
 | MASTER_BRIEFING_V6.md | archives | 0 | 0 | 100% |
 | Souls Configuration Canvas - V1.md | archives | 0 | 0 | 100% |
 | Souls Configuration Canvas - V2.md | archives | 0 | 0 | 100% |
+| fbox-history-project-blueprint.md | archives | 0 | 0 | 100% |
+| fbox-history-project-blueprint_v2.md | archives | 0 | 0 | 100% |
+| fbox-history-project-blueprint_v3.md | archives | 0 | 0 | 100% |
+| fbox-history-project-blueprint_v4.md | archives | 0 | 0 | 100% |
+| fbox-history-project-blueprint_v5.md | archives | 0 | 0 | 100% |
 | plutus_update_plan.md | Current Started Plans | 131 | 133 | 98% |
 | NEXUS_BLUEPRINT_V1.md | Current Completed Plans | 5 | 11 | 45% |
-| plutus_build_blueprint.md | Current Started Plans | 0 | 26 | 0% |
 | STATIC_TO_DYNAMIC_TRANSITION_PLAN.md | Current Completed Plans | 0 | 8 | 0% |
 | dynamic-souls-blueprint-v1.md | Current Completed Plans | 0 | 7 | 0% |
 | COUNCIL_CRON_JOBS_ANALYSIS.md | Current Unstarted Plans | 0 | 8 | 0% |

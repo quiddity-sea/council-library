@@ -34,3 +34,8 @@
 | NEXUS_DESIGN.md | 1.0 | Current Reference Documentation | Design Specification for The Nexus Control Plane (12-col grid, HUD panels, reorder engine, token forms) | 2026-07-27 |
 | ARCHIVE_DESIGN.md | 1.0 | Current Reference Documentation | Design Specification for The ForeverBox Archive (Fixed sidebar nav, terminal green #00ff41, chapter codex) | 2026-07-27 |
 | INSTITUTE_DESIGN.md | 1.0 | Current Reference Documentation | Design Specification for The ForeverBox Institute (Dynamic 6-theme engine, scanline overlay, hero headers) | 2026-07-27 |
+
+| 2026-08-01 | plutus_user_manual.md | Added | Leon | N/A | Moved from Current Started Plans to Current Reference Documentation; Phase 2 chapter added (planned tx/income, spend tasks, Google Calendar, period selector) |
+| 2026-08-01 | plutus_build_blueprint.md | Added | Leon | N/A | Moved from Current Started Plans to Current Reference Documentation; Phase 2 architecture section added (schema changes, TaskController, GoogleCalendarService, PeriodsController, new API actions) |
+| 2026-08-01 | plutus_onboarding_guide.md | Added | Leon | N/A | Moved from Current Started Plans to Current Reference Documentation; Phase 2 additions section added |
+| 2026-08-01 | Plans Progression.md | Updated | Leon | Medium | Relocated Plutus reference docs to Current Reference Documentation; archived fbox-history blueprints v1-v5 (superseded by v6); overall 99% |
