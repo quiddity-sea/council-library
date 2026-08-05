@@ -541,3 +541,23 @@ The timeframe buttons (DAY/WEEK/MONTH/YEAR) are now accompanied by a **period se
 - **YEAR**: the last 5 years and the next 5 years
 
 Selecting a period filters every dashboard query (totals, transaction log, category breakdown, planned panel) to that period. This is how you view a past month — e.g. switch to MONTH, then pick JUL 2026 from the selector.
+
+
+## What's New — Build Plan V4.0 Upgrades
+*(Appended August 2026)*
+
+### 1. Dedicated Top-Level Management Tabs
+To improve intuitive navigation and speed up workflow, two new tabs have been elevated to the main navigation bar:
+- **CATEGORIES**: A dedicated screen to view, search, sort, and manage categories. Includes a contextual sidebar allowing quick filtering by category type (`expense`, `income`, `product`, `service`, `account`).
+- **BUDGETS**: A dedicated screen to view, search, sort, and manage budget caps. Includes a contextual sidebar to filter by budget scope (`personal`, `household`, `improvement`).
+
+*The legacy manage buttons inside other tabs have been superseded by these dedicated views.*
+
+### 2. HUD Non-Blocking Interface Interactions
+Native browser `alert()` and `confirm()` dialogs have been entirely replaced with bespoke, styled HUD components:
+- **Toast Notifications**: Feedback messages (e.g., "Saved", "Deleted") now appear as smooth, non-blocking slide-in panels in the top right corner. They automatically dismiss after a few seconds without requiring your click.
+- **Universal Confirm Modals**: Deleting items or confirming major actions now triggers a centralized, styled glass-panel confirmation prompt matching the ForeverBox aesthetic.
+
+### 3. Layout & Visual Polish
+- All modal dialogs (such as the transaction editor) now dynamically adjust their height (`max-h-[90vh] h-auto`) to ensure they fit seamlessly on smaller screens or laptops without cutting off the bottom action buttons.
+- The background theme's dark radial gradient has been seamlessly integrated into the Tailwind configuration (`hud-gradient`), providing a smoother, unified styling hierarchy.

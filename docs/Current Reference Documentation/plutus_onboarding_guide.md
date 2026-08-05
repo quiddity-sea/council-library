@@ -114,3 +114,21 @@ sudo -u www-data bash scripts/smoke_staging.sh   # must be 7/7 green
 - Budget totals update only from `status='spent'` transactions — planned rows never touch budget position
 - Google Calendar cannot be end-to-end tested until credentials exist; verify `google_auth` returns `GOOGLE_NOT_CONFIGURED` gracefully otherwise
 - Staging rsync overwrites `db.php` — always re-point to `plutus_thoughts_staging` after sync
+
+
+## Phase 4.0 Upgrades & Security (2026-08)
+
+### Security Enhancements
+- **Environment Secrets (`.env`)**: Database credentials and sensitive keys are now strictly loaded from `.env` (gitignored). `db.php` leverages `getenv()` with fallback capabilities to keep credentials out of version control.
+- **Cron Hardening**: `cron.php` is now strictly locked to CLI execution (`php_sapi_name() === 'cli'`). It utilizes non-blocking atomic file locks (`flock(LOCK_EX | LOCK_NB)`) to prevent overlapping executions and wraps data mutations in PDO Database Transactions (`beginTransaction() / commit()`) to ensure atomicity.
+- **Global XSS Sanitization**: A new global `window.escapeHtml()` utility is enforced across all dynamic JavaScript template literal interpolations (e.g. `${window.escapeHtml(t.name)}`) to prevent Cross-Site Scripting.
+
+### Frontend Modularity (Without Bundlers)
+To keep the frontend lean and free from Node/Webpack/Vite build steps, the monolithic `app.js` has been modularized natively:
+- `assets/js/state.js` manages global state (`appState`), XSS utilities, debouncing, and Toast/Modal interactions.
+- `assets/js/components/table.js` handles reusable, unified UI generation for data tables.
+- Versioning query strings (e.g. `?v=4.1`) are tied to `sw.js` and `index.php` for robust service worker cache invalidation.
+
+### Continuous Integration (CI/CD)
+- Legacy standalone test scripts (e.g. `tests/rate_limiter_test.php`) were cleaned up.
+- A **Playwright E2E** job was integrated into the `.github/workflows/ci.yml` pipeline, automatically installing dependencies and running browser tests against pull requests and main branch pushes.

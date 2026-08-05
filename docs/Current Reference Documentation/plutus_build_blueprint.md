@@ -680,3 +680,24 @@ client -> api.php (legacy) or api/v1.php (versioned)
 - **complete_task next-instance generation**: increments recurrence_completed; creates a new task row for the next occurrence when recurrence is continuous or count not reached. Weekly-with-days computes the strictly-next matching weekday.
 - **Validation**: full required-field validation applies on CREATE only; partial updates (mark-spent, single-field edits) skip base required checks. Planned transactions require projected_amount; spent transactions require amount.
 - **Google credentials**: read from environment variables `PLUTUS_GOOGLE_CLIENT_ID` / `PLUTUS_GOOGLE_CLIENT_SECRET` only (no hardcoded constants). OAuth redirect URI is `https://<host>/api.php?action=oauth_callback`. When unconfigured, all GoogleCalendarService methods return false and the UI shows CALENDAR: DISCONNECTED.
+
+
+## Architecture Update — Build Plan V4.0 (2026-08-05)
+
+### Database Schema Alignment
+- **`transactions` table**: Missing legacy columns were permanently added to `schema.sql`: `deleted_at`, `status`, `projected_amount`, `currency`, `account_id`.
+- **Performance Indexes**: High-usage lookup queries were optimized by applying indexes to live MariaDB: `idx_date`, `idx_deleted`, `idx_status`.
+- **Enum Synchronization**: The `budgets.type` enum was aligned perfectly with frontend validation as singular `'improvement'`.
+
+### Backend & API Optimizations
+- **N+1 Query Elimination**: The `DashboardController` and `ObjectController` were refactored to remove per-row sub-item fetches. They now execute a single, batched query (`WHERE transaction_id IN (...)`) mapped via PHP associative arrays, significantly reducing database load on high-volume tabs.
+- **Parameterized Metadata Filtering**: `ObjectController::getMetadata()` now parses the `?entities=category,vendor` query string. The API only executes and returns schemas for the explicitly requested tables, drastically reducing payload sizes for targeted component refreshes.
+- **Centralized Date Parsing**: Duplicate date boundary calculations were extracted into `api/utils/DateFilter.php::periodFilter()`, creating a DRY standard shared across `DashboardController` and `ExportController`.
+- **Bank Import Duplicate Optimization**: In `BankImportController`, duplicate candidate searches now pre-filter rows natively in SQL (`WHERE DATE(date) BETWEEN minDate AND maxDate`) prior to running expensive fuzzy-matching string logic (`similar_text`) in memory.
+
+### Frontend Component & Motion Architecture
+- **`renderDataTable(config)`**: A unified JS renderer factory that manages column alignment, sorting headers, empty-state rendering, and click event bubbling across arbitrary data sets.
+- **Non-Blocking UI System**: 
+  - `showToast(msg, type)` uses GSAP to construct and slide in temporary DOM notifications.
+  - `showConfirm(title, msg, onConfirm)` manages a dedicated modal overlay, hijacking confirmations to keep users in the HUD ecosystem.
+- **Tailwind Extension Strategy**: Core background overrides (like the dark radial gradient) were shifted out of standard CSS and integrated directly into the `tailwind-config.js` (`backgroundImage: { 'hud-gradient': ... }`) to establish Tailwind as the singular styling source of truth.
