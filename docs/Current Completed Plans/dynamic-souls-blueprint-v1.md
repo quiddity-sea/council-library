@@ -124,7 +124,75 @@ hermes --profile "$AGENT"
 
 ---
 
-## 4. Integration Points
+## 4. Soul Manager Dashboard — `the-council.invigor.com/souls/`
+
+*New domain for Hermes agent management. First feature: Soul Manager Dashboard.*
+
+### Domain & Routing
+- **Domain**: `the-council.invigor.com` (new vhost on the Wales Hub)
+- **Path**: `/souls/` — all soul management UI lives under this path
+- **Auth**: Session-based (same as Plutus) with role-based access (admin/editor/viewer)
+
+### Features
+
+#### 4.1 Component Browser
+- List all components with filters: agent_slug, provider_filter, component_key
+- Search by component_key, section_description, content
+- Pagination (50 per page)
+
+#### 4.2 Component Editor
+- Create new component: form with fields (component_key, agent_slug, provider_filter, section_order, section_description, section_content markdown)
+- Edit existing component: pre-filled form, live markdown preview
+- Delete component: confirmation modal
+- Version history: show last 10 changes (from updated_at/updated_by)
+
+#### 4.3 Assembly Preview
+- Select agent + provider → renders assembled SOUL.md in real-time
+- Shows token estimate (local vs cloud)
+- Highlights which components are included/excluded and why
+
+#### 4.4 Agent & Variant Management
+- List all agents (zeon7, leon, gemma, otec, wolf, coder variants)
+- Show which variants exist per agent
+- Create new variant (agent_slug + provider_filter combination)
+
+#### 4.5 Audit Log
+- All changes logged with: component_key, agent_slug, field_changed, old_value, new_value, changed_by, timestamp
+- Searchable/filterable
+
+### Technical Stack
+- **Backend**: PHP (modular API under `api/controllers/SoulManagerController.php`)
+- **Frontend**: Vanilla JS + Tailwind (consistent with Plutus/Institute design system)
+- **Auth**: Session-based (same as Plutus) with role-based access (admin/editor/viewer)
+- **API**: RESTful under `/api/soul/` (GET list, GET single, POST create, PUT update, DELETE)
+
+### Database Extensions
+```sql
+-- Add audit log table
+CREATE TABLE soul_component_audit (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    component_id INT UNSIGNED NOT NULL,
+    field_changed VARCHAR(64) NOT NULL,
+    old_value MEDIUMTEXT NULL,
+    new_value MEDIUMTEXT NULL,
+    changed_by VARCHAR(64) NOT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_component (component_id),
+    INDEX idx_changed_at (changed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+### Acceptance Criteria Additions
+- [ ] Dashboard accessible at `https://the-council.invigor.com/souls/`
+- [ ] Component browser lists all 18 components with filters
+- [ ] Create/edit/delete component works with validation
+- [ ] Assembly preview renders correct SOUL.md for any agent+provider combo
+- [ ] Audit log records all changes with user attribution
+- [ ] Role-based access control (admin can edit, viewer read-only)
+
+---
+
+## 5. Integration Points
 
 ### Option A: Wrapper script (recommended)
 
@@ -166,7 +234,7 @@ ExecStart=/usr/local/bin/hermes --profile zeon7
 
 ---
 
-## 5. What a Local Agent Gets vs Cloud Agent
+## 7. What a Local Agent Gets vs Cloud Agent
 
 ### Zeon7 on local model (provider: ollama)
 
@@ -193,7 +261,7 @@ Same as above, but wolf_protocol (full) replaces wolf_protocol_local_stub
 
 ---
 
-## 6. Updating Components
+## 8. Updating Components
 
 To update a shared component (e.g., the Memory Operations section changes):
 
@@ -207,7 +275,7 @@ All agents receive the update on their next launch. No editing four files. One s
 
 ---
 
-## 7. Adding a New Agent
+## 9. Adding a New Agent
 
 ```sql
 INSERT INTO soul_components (component_key, agent_slug, section_order, section_content) VALUES
@@ -219,7 +287,7 @@ Shared components (memory_operations, wolf_protocol, doc_maintenance) are automa
 
 ---
 
-## 8. Migration Path
+## 10. Migration Path
 
 1. Create the `soul_components` table
 2. Run a migration script that splits each current SOUL.md into its component sections and inserts them into the table
@@ -231,7 +299,7 @@ No data is lost. The static files can coexist during migration.
 
 ---
 
-## 9. Acceptance Criteria
+## 11. Acceptance Criteria
 
 - [ ] `soul_components` table created in `agent_registry`
 - [ ] Seed data populated from current SOUL.md files
@@ -240,6 +308,8 @@ No data is lost. The static files can coexist during migration.
 - [ ] Updating one shared component propagates to all agents on next build
 - [ ] A new agent can be added with only agent-specific components — shared ones auto-included
 - [ ] Hermes reads the assembled SOUL.md as a normal file — no special handling needed
+- [ ] **Wrapper script (`fbox-launch` or Hermes hook) auto-assembles SOUL.md on agent launch**
+- [ ] **Soul Manager Dashboard at `the-council.invigor.com/souls/` — full CRUD UI for components**
 
 ---
 
