@@ -8,7 +8,8 @@ use Slim\Routing\RouteCollectorProxy;
 use CouncilLibrary\Controller\{
     SoulController, MemoryController, ConversationController,
     WolfController, QuiddityController, IngestionController,
-    FolderController, DirectorController, ConnectedSitesController
+    FolderController, DirectorController, ConnectedSitesController,
+    AssignmentController
 };
 
 $container = require __DIR__ . '/../src/bootstrap.php';
@@ -105,6 +106,10 @@ $app->group('/v1/registry', function (RouteCollectorProxy $r) {
     $r->post('/privileged-actions', c(SoulController::class, 'requestPrivileged'));
     $r->get('/privileged-actions/{id}', c(SoulController::class, 'getPrivileged'));
     $r->post('/privileged-actions/{id}/confirm', c(SoulController::class, 'confirmPrivileged'));
+
+    // User-Agent Assignments
+    $r->get('/assignments', c(AssignmentController::class, 'listByUser'));
+    $r->put('/assignments', c(AssignmentController::class, 'upsert'));
 });
 
 $app->run();
