@@ -23,13 +23,30 @@ $app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
 $app->addErrorMiddleware(true, true, true);
 
+function resolveSanctumDb(string $agent): string {
+    $map = [
+        'zeon7'     => 'agent_curator',
+        'curator'   => 'agent_curator',
+        'leon'      => 'agent_producer',
+        'producer'  => 'agent_producer',
+        'gemma'     => 'agent_coach',
+        'coach'     => 'agent_coach',
+        'otec'      => 'agent_director',
+        'director'  => 'agent_director',
+        'wolf'      => 'agent_wolf',
+    ];
+    return $map[strtolower($agent)] ?? ('agent_' . $agent);
+}
+
 // Shortcut: resolve controller from container, switch to agent's Sanctum
 function c(string $class, string $method): callable {
-    return function (Request $req, Response $res, array $args) use ($class, $method) {
+    return function (Request $req, Response $res, array $args = []) use ($class, $method) {
         $agent = $req->getAttribute('agent_slug') ?? 'curator';
+        $sanctum = resolveSanctumDb($agent);
         $pdo = $this->get(PDO::class);
-        $sanctum = 'agent_' . $agent;
-        try { $pdo->exec("USE `{$sanctum}`"); } catch (\PDOException $e) {}
+        try { 
+            $pdo->exec("USE `{$sanctum}`"); 
+        } catch (\PDOException $e) {}
         $ctrl = $this->get($class);
         return $ctrl->$method($req, $res, $args);
     };
@@ -67,6 +84,7 @@ $app->group('/v1/sanctum', function (RouteCollectorProxy $s) {
     $s->put('/memory/hermes_builtin/{action}', c(MemoryController::class, 'putDynamic'));
 
     $s->get('/conversations', c(ConversationController::class, 'list'));
+    $s->post('/conversations/search', c(ConversationController::class, 'search'));
     $s->get('/conversations/{sid}', c(ConversationController::class, 'get'));
     $s->post('/conversations', c(ConversationController::class, 'create'));
     $s->post('/conversations/{sid}/messages', c(ConversationController::class, 'append'));
@@ -79,10 +97,10 @@ $app->group('/v1/sanctum', function (RouteCollectorProxy $s) {
 
 // ── Commons ─────────────────────────────────────────────────
 $app->group('/v1/commons', function (RouteCollectorProxy $c) {
-    $c->get('/files', c(CommonsController::class, 'listFiles'));
-    $c->post('/files/sync', c(CommonsController::class, 'syncFiles'));
-    $c->get('/files/{id}/chunks', c(CommonsController::class, 'getChunks'));
-    $c->get('/search', c(CommonsController::class, 'search'));
+    $c->get('/files', c(QuiddityController::class, 'listFiles'));
+    $c->post('/files/sync', c(QuiddityController::class, 'sync'));
+    $c->get('/files/{id}/chunks', c(QuiddityController::class, 'chunks'));
+    $c->get('/search', c(QuiddityController::class, 'search'));
     $c->get('/folders', c(FolderController::class, 'list'));
     $c->put('/folders', c(FolderController::class, 'upsert'));
     $c->delete('/folders/{name}', c(FolderController::class, 'delete'));
