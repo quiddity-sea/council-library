@@ -80,6 +80,40 @@ assertTest('GET /v1/sanctum/conversations succeeds (200)', $r['status'] === 200,
 $r = req('GET', '/v1/registry/budget', null, $validToken);
 assertTest('GET /v1/registry/budget succeeds (200)', $r['status'] === 200, "got {$r['status']}");
 
+// 4. Phase 2 Canonical Council APIs
+$r = req('GET', '/v1/registry/agents', null, $validToken);
+assertTest('GET /v1/registry/agents returns roster (200)', $r['status'] === 200 && ($r['body']['count'] ?? 0) >= 5, "got count " . ($r['body']['count'] ?? 0));
+
+$r = req('GET', '/v1/registry/agents/zeon7', null, $validToken);
+assertTest('GET /v1/registry/agents/zeon7 returns detail (200)', $r['status'] === 200 && ($r['body']['agent']['slug'] ?? '') === 'zeon7');
+
+$r = req('GET', '/v1/registry/heads', null, $validToken);
+assertTest('GET /v1/registry/heads returns components (200)', $r['status'] === 200 && ($r['body']['count'] ?? 0) > 0);
+
+// Test Head CRUD
+$newHead = [
+    'component_key'       => 'test_head_coder',
+    'agent_slug'          => 'zeon7',
+    'provider_filter'     => 'ollama',
+    'section_order'       => 45,
+    'section_description' => 'Test Coder Head',
+    'section_content'     => '## TEST CODER HEAD\nSpecialist coding persona.'
+];
+$r = req('POST', '/v1/registry/heads', $newHead, $validToken);
+$createdId = $r['body']['id'] ?? null;
+assertTest('POST /v1/registry/heads creates component (201)', $r['status'] === 201 && $createdId !== null, "status {$r['status']}");
+
+if ($createdId) {
+    $r = req('PUT', "/v1/registry/heads/{$createdId}", ['section_description' => 'Updated Description'], $validToken);
+    assertTest('PUT /v1/registry/heads/{id} updates component (200)', $r['status'] === 200);
+
+    $r = req('DELETE', "/v1/registry/heads/{$createdId}", null, $validToken);
+    assertTest('DELETE /v1/registry/heads/{id} removes component (200)', $r['status'] === 200);
+}
+
+$r = req('GET', '/v1/registry/models', null, $validToken);
+assertTest('GET /v1/registry/models returns router profiles (200)', $r['status'] === 200 && isset($r['body']['profiles']));
+
 echo "\nSummary: {$passed} / {$tests} tests passed.\n";
 if ($passed === $tests) {
     echo ">>> ALL API CONTRACT TESTS PASSED! <<<\n";

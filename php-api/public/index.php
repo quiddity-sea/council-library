@@ -9,7 +9,7 @@ use CouncilLibrary\Controller\{
     SoulController, MemoryController, ConversationController,
     WolfController, QuiddityController, IngestionController,
     FolderController, DirectorController, ConnectedSitesController,
-    AssignmentController
+    AssignmentController, AgentCatalogueController
 };
 
 $container = require __DIR__ . '/../src/bootstrap.php';
@@ -129,6 +129,22 @@ $app->group('/v1/registry', function (RouteCollectorProxy $r) {
     // User-Agent Assignments
     $r->get('/assignments', c(AssignmentController::class, 'listByUser'));
     $r->put('/assignments', c(AssignmentController::class, 'upsert'));
+
+    // Agent Catalogue & Roster
+    $r->get('/agents', c(AgentCatalogueController::class, 'listAgents'));
+    $r->get('/agents/{slug}', c(AgentCatalogueController::class, 'getAgent'));
+    $r->get('/catalogue', c(AgentCatalogueController::class, 'listAgents'));
+
+    // Head / Dynamic SOUL Component CRUD
+    $r->get('/heads', c(AgentCatalogueController::class, 'listHeads'));
+    $r->get('/heads/{id}', c(AgentCatalogueController::class, 'getHead'));
+    $r->post('/heads', c(AgentCatalogueController::class, 'createHead'));
+    $r->put('/heads/{id}', c(AgentCatalogueController::class, 'updateHead'));
+    $r->delete('/heads/{id}', c(AgentCatalogueController::class, 'deleteHead'));
+    $r->get('/agents/{slug}/heads', c(AgentCatalogueController::class, 'listHeads'));
+
+    // Model Profiles
+    $r->get('/models', c(AgentCatalogueController::class, 'listModels'));
 });
 
 $app->run();

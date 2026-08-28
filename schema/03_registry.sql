@@ -4,7 +4,7 @@
 CREATE DATABASE IF NOT EXISTS agent_registry CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE agent_registry;
 
-CREATE TABLE agents (
+CREATE TABLE IF NOT EXISTS agents (
     slug VARCHAR(64) PRIMARY KEY,
     display_name VARCHAR(128) NOT NULL,
     role ENUM('lead','director') NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE agents (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
-CREATE TABLE specialist_workers (
+CREATE TABLE IF NOT EXISTS specialist_workers (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     worker_id VARCHAR(64) NOT NULL UNIQUE,
     parent_agent_slug VARCHAR(64) NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE specialist_workers (
     FOREIGN KEY (parent_agent_slug) REFERENCES agents(slug) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE token_budget_ledger (
+CREATE TABLE IF NOT EXISTS token_budget_ledger (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     tier ENUM('system2_light','system2_heavy') NOT NULL,
     usage_date DATE NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE token_budget_ledger (
     UNIQUE KEY uk_tier_date (tier, usage_date)
 ) ENGINE=InnoDB;
 
-CREATE TABLE privileged_action_log (
+CREATE TABLE IF NOT EXISTS privileged_action_log (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     agent_slug VARCHAR(64) NOT NULL,
     wolf_id VARCHAR(64) NULL,
@@ -55,7 +55,7 @@ CREATE TABLE privileged_action_log (
     KEY idx_code (confirmation_code)
 ) ENGINE=InnoDB;
 
-CREATE TABLE task_queue (
+CREATE TABLE IF NOT EXISTS task_queue (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     task_id VARCHAR(128) NOT NULL UNIQUE,
     directive_id VARCHAR(128) NULL,
@@ -80,7 +80,7 @@ CREATE TABLE task_queue (
     KEY idx_priority_created (priority DESC, created_at)
 ) ENGINE=InnoDB;
 
-CREATE TABLE api_keys (
+CREATE TABLE IF NOT EXISTS api_keys (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     key_prefix CHAR(8) NOT NULL,
     key_hash CHAR(64) NOT NULL,
@@ -93,3 +93,12 @@ CREATE TABLE api_keys (
     UNIQUE KEY uk_prefix (key_prefix),
     KEY idx_owner (owner_agent_slug)
 ) ENGINE=InnoDB;
+
+-- Default Canonical Agent Seeds
+INSERT INTO agents (slug, display_name, role, description, db_name, api_key_hash, allowed_scopes, status) VALUES
+('zeon7', 'Zeon7', 'lead', 'Curator and lead digital twin', 'agent_curator', 'c8742880a4242194f4a9840f09a567671755a5bf909fc726ff38a8e1ec6fbfa6', '["*"]', 'active'),
+('leon', 'Leon', 'lead', 'Executive producer and media coordinator', 'agent_producer', 'c8742880a4242194f4a9840f09a567671755a5bf909fc726ff38a8e1ec6fbfa6', '["*"]', 'active'),
+('gemma', 'Gemma', 'lead', 'Cognitive coach and dialogue specialist', 'agent_coach', 'c8742880a4242194f4a9840f09a567671755a5bf909fc726ff38a8e1ec6fbfa6', '["*"]', 'active'),
+('otec', 'Otec', 'director', 'Strategic director and architectural planner', 'agent_director', 'c8742880a4242194f4a9840f09a567671755a5bf909fc726ff38a8e1ec6fbfa6', '["*"]', 'active'),
+('wolf', 'Wolf', 'lead', 'Autonomous worker and task execution specialist', 'agent_wolf', 'c8742880a4242194f4a9840f09a567671755a5bf909fc726ff38a8e1ec6fbfa6', '["*"]', 'active')
+ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), description = VALUES(description);
