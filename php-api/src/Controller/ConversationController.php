@@ -63,45 +63,66 @@ class ConversationController
         $body = $request->getParsedBody() ?? json_decode((string)$request->getBody(), true) ?? [];
         $sessionId = $args['sid'] ?? $args['session_id'] ?? $body['session_id'] ?? bin2hex(random_bytes(16));
 
-        $stmt = $this->pdo->prepare(
-            "SELECT COALESCE(MAX(message_seq), 0) + 1 as next_seq
-             FROM conversation_history
-             WHERE agent_slug = :agent AND session_id = :sid"
-        );
-        $stmt->execute(['agent' => $agent, 'sid' => $sessionId]);
-        $seq = (int) $stmt->fetch()['next_seq'];
+        $ipAddress       = $body['ip_address'] ?? null;
+        $operatorId      = isset($body['operator_id']) ? (int)$body['operator_id'] : null;
+        $model           = $body['metadata']['model'] ?? $body['model'] ?? null;
+        $sourceInterface = $body['source_interface'] ?? $body['metadata']['source_interface'] ?? 'self_public';
+        $headUsed        = $body['head_used'] ?? $body['metadata']['head'] ?? null;
+        $requestId       = $body['request_id'] ?? $request->getAttribute('request_id');
+        $tokensIn        = isset($body['tokens_input']) ? (int)$body['tokens_input'] : (isset($body['metadata']['tokens_input']) ? (int)$body['metadata']['tokens_input'] : null);
+        $tokensOut       = isset($body['tokens_output']) ? (int)$body['tokens_output'] : (isset($body['metadata']['tokens']) ? (int)$body['metadata']['tokens'] : null);
 
-        $ipAddress  = $body['ip_address'] ?? null;
-        $operatorId = isset($body['operator_id']) ? (int)$body['operator_id'] : null;
-        $model      = $body['metadata']['model'] ?? $body['model'] ?? null;
-
-        // Single turn format: {role, content, ...}
-        if (!empty($body['role']) && isset($body['content'])) {
-            $this->insertMessage(
-                $agent, $sessionId, $seq++, (string)$body['role'],
-                (string)$body['content'], $model, $ipAddress, $operatorId
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare(
+                "SELECT COALESCE(MAX(message_seq), 0) + 1 as next_seq
+                 FROM conversation_history
+                 WHERE agent_slug = :agent AND session_id = :sid
+                 FOR UPDATE"
             );
-        }
+            $stmt->execute(['agent' => $agent, 'sid' => $sessionId]);
+            $seq = (int) $stmt->fetch()['next_seq'];
 
-        // Dual turn format: {user, assistant}
-        if (!empty($body['user'])) {
-            $this->insertMessage(
-                $agent, $sessionId, $seq++, 'user',
-                (string)$body['user'], $model, $ipAddress, $operatorId
-            );
-        }
-        if (!empty($body['assistant'])) {
-            $this->insertMessage(
-                $agent, $sessionId, $seq++, 'assistant',
-                (string)$body['assistant'], $model, $ipAddress, $operatorId
-            );
-        }
+            // Single turn format: {role, content, ...}
+            if (!empty($body['role']) && isset($body['content'])) {
+                $this->insertMessage(
+                    $agent, $sessionId, $seq++, (string)$body['role'],
+                    (string)$body['content'], $model, $ipAddress, $operatorId,
+                    $sourceInterface, $headUsed, $requestId, $tokensIn, $tokensOut
+                );
+            }
 
-        return $this->json($response, [
-            'success'    => true,
-            'session_id' => $sessionId,
-            'appended'   => $seq - 1
-        ]);
+            // Dual turn format: {user, assistant}
+            if (!empty($body['user'])) {
+                $this->insertMessage(
+                    $agent, $sessionId, $seq++, 'user',
+                    (string)$body['user'], $model, $ipAddress, $operatorId,
+                    $sourceInterface, $headUsed, $requestId, $tokensIn, null
+                );
+            }
+            if (!empty($body['assistant'])) {
+                $this->insertMessage(
+                    $agent, $sessionId, $seq++, 'assistant',
+                    (string)$body['assistant'], $model, $ipAddress, $operatorId,
+                    $sourceInterface, $headUsed, $requestId, null, $tokensOut
+                );
+            }
+
+            $this->pdo->commit();
+
+            return $this->json($response, [
+                'success'          => true,
+                'session_id'       => $sessionId,
+                'appended'         => $seq - 1,
+                'source_interface' => $sourceInterface,
+            ]);
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            $this->logger->error('conversation_append_failed', ['error' => $e->getMessage()]);
+            return $this->json($response, ['success' => false, 'error' => $e->getMessage()], 500);
+        }
     }
 
     public function search(Request $request, Response $response): Response
@@ -116,7 +137,7 @@ class ConversationController
         }
 
         $stmt = $this->pdo->prepare(
-            "SELECT session_id, message_seq, role, content_text, model_used, created_at
+            "SELECT session_id, message_seq, role, content_text, model_used, source_interface, created_at
              FROM conversation_history
              WHERE agent_slug = :agent AND content_text LIKE :query
              ORDER BY created_at DESC
@@ -130,22 +151,31 @@ class ConversationController
 
     private function insertMessage(
         string $agent, string $sid, int $seq, string $role,
-        string $content, ?string $model, ?string $ip, ?int $operatorId
+        string $content, ?string $model, ?string $ip, ?int $operatorId,
+        string $sourceInterface = 'self_public', ?string $headUsed = null,
+        ?string $requestId = null, ?int $tokensIn = null, ?int $tokensOut = null
     ): void {
         $stmt = $this->pdo->prepare(
             "INSERT INTO conversation_history
-             (agent_slug, session_id, message_seq, role, content_text, model_used, ip_address, operator_id)
-             VALUES (:agent, :sid, :seq, :role, :content, :model, :ip, :op_id)"
+             (agent_slug, session_id, message_seq, role, content_text, model_used, ip_address, operator_id,
+              source_interface, head_used, request_id, tokens_input, tokens_output)
+             VALUES (:agent, :sid, :seq, :role, :content, :model, :ip, :op_id,
+                     :source_interface, :head_used, :request_id, :tokens_in, :tokens_out)"
         );
         $stmt->execute([
-            'agent'   => $agent,
-            'sid'     => $sid,
-            'seq'     => $seq,
-            'role'    => $role,
-            'content' => $content,
-            'model'   => $model,
-            'ip'      => $ip,
-            'op_id'   => $operatorId,
+            'agent'            => $agent,
+            'sid'              => $sid,
+            'seq'              => $seq,
+            'role'             => $role,
+            'content'          => $content,
+            'model'            => $model,
+            'ip'               => $ip,
+            'op_id'            => $operatorId,
+            'source_interface' => $sourceInterface,
+            'head_used'        => $headUsed,
+            'request_id'       => $requestId,
+            'tokens_in'        => $tokensIn,
+            'tokens_out'       => $tokensOut,
         ]);
     }
 
