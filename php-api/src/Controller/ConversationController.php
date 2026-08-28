@@ -35,7 +35,8 @@ class ConversationController
         $agent = $request->getAttribute('agent_slug') ?? 'curator';
         $sid = $args['sid'] ?? $args['session_id'] ?? '';
         $stmt = $this->pdo->prepare(
-            "SELECT message_seq, role, content_text, tool_calls, model_used, operator_id, ip_address, created_at
+            "SELECT message_seq, role, content_text, tool_calls, model_used, operator_id,
+                    ip_address, source_interface, head_used, request_id, tokens_input, tokens_output, created_at
              FROM conversation_history
              WHERE agent_slug = :agent AND session_id = :sid
              ORDER BY message_seq"
