@@ -109,6 +109,7 @@ $app->group('/v1/commons', function (RouteCollectorProxy $c) {
     $c->get('/sites', c(ConnectedSitesController::class, 'list'));
     $c->get('/sites/{slug}', c(ConnectedSitesController::class, 'get'));
     $c->post('/sites', c(ConnectedSitesController::class, 'upsert'));
+    $c->post('/ingest/batch', c(IngestionController::class, 'batch'));
 });
 
 // ── Director ────────────────────────────────────────────────

@@ -229,7 +229,7 @@ class QuiddityController
     public function chunks(Request $request, Response $response, array $args): Response
     {
         $this->ensureCommons();
-        $fileId = (int) $args['fid'];
+        $fileId = (int) ($args['id'] ?? $args['fid'] ?? 0);
 
         // Verify file exists
         $ck = $this->pdo->prepare(

@@ -20,20 +20,10 @@ class AgentContext implements MiddlewareInterface
             $agentSlug = 'unknown';
         }
 
-        // Switch PDO to the agent's Sanctum
-        // Container is accessed via the request attribute set by Slim
-        $sanctumDb = 'agent_' . $agentSlug;
-        try {
-            // PDO switch is best-effort; controllers manage their own DB context
-        } catch (\PDOException $e) {
-            // Sanctum may not exist yet
-        }
-
         $request = $request
             ->withAttribute('agent_slug', $agentSlug)
             ->withAttribute('wolf_id', $wolfId ?: null)
-            ->withAttribute('request_id', $requestId)
-            ->withAttribute('sanctum_pdo', $pdo);
+            ->withAttribute('request_id', $requestId);
 
         $response = $handler->handle($request);
         return $response->withHeader('X-Request-ID', $requestId);

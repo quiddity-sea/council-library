@@ -24,13 +24,15 @@ AGENT_DATABASES = [
     "agent_producer",   # leon
     "agent_coach",      # gemma
     "agent_director",   # otec
+    "agent_wolf",       # wolf
 ]
 
-def get_embedding(text: str) -> list[float]:
-    """Generate 384-dim embedding via local embedding service."""
-    resp = requests.post(EMBEDDING_URL, json={"text": text}, timeout=10)
+def get_embedding_hex(text: str) -> str:
+    """Generate 384-dim embedding hex string via local embedding service."""
+    resp = requests.post(EMBEDDING_URL, json={"texts": [text]}, timeout=10)
     resp.raise_for_status()
-    return resp.json()["embedding"]
+    data = resp.json()
+    return data["embeddings"][0]
 
 def process_agent(agent_db: str):
     """Find unembedded conversation messages and generate vectors."""
@@ -65,23 +67,20 @@ def process_agent(agent_db: str):
     for msg in messages:
         try:
             text = msg["content_text"][:2000]
-            embedding = get_embedding(text)
+            emb_hex = get_embedding_hex(text)
 
             cv_cursor.execute("""
                 INSERT INTO conversation_vectors
-                (source_table, source_id, session_id, agent_id, role,
-                 content_preview, embedding, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, VEC_FromText(%s), %s)
-                ON DUPLICATE KEY UPDATE content_preview = VALUES(content_preview)
+                (agent_slug, session_id, message_id, role, content_text, embedding, created_at)
+                VALUES (%s, %s, %s, %s, %s, UNHEX(%s), %s)
             """, (
-                agent_db,
-                msg["id"],
-                msg["session_id"],
                 agent_db.replace("agent_", ""),
+                msg["session_id"],
+                msg["id"],
                 msg["role"],
-                text[:200],
-                json.dumps(embedding),
-                msg["created_at"].isoformat() if msg["created_at"] else datetime.now().isoformat()
+                text,
+                emb_hex,
+                msg["created_at"] if msg["created_at"] else datetime.now()
             ))
             commons.commit()
         except Exception as e:

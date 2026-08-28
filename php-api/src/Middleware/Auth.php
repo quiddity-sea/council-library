@@ -8,18 +8,21 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface as Handler;
 use Slim\Psr7\Response as SlimResponse;
+use PDO;
 
 class Auth implements MiddlewareInterface
 {
     private const PUBLIC_PATHS = ['/v1/healthz', '/v1/readyz'];
     private const PUBLIC_PREFIXES = ['/v1/commons/sites'];
 
+    public function __construct(private PDO $pdo) {}
+
     public function process(Request $request, Handler $handler): Response
     {
         $path = $request->getUri()->getPath();
 
         // Skip auth for public health endpoints
-        if (in_array($path, self::PUBLIC_PATHS)) {
+        if (in_array($path, self::PUBLIC_PATHS, true)) {
             return $handler->handle($request);
         }
 
@@ -29,19 +32,47 @@ class Auth implements MiddlewareInterface
                 return $handler->handle($request);
             }
         }
+
         $authHeader = $request->getHeaderLine('Authorization');
 
         if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
             return $this->unauthorized('Missing or malformed Authorization header');
         }
 
-        $token = substr($authHeader, 7);
+        $token = trim(substr($authHeader, 7));
+        if ($token === '') {
+            return $this->unauthorized('Empty Bearer token provided');
+        }
+
         $tokenHash = hash('sha256', $token);
 
-        $pdo = $request->getAttribute('registry_pdo');
-        // Validated against agent_registry.api_keys
-        // For now, accept any token that hashes to a known key
-        // Full implementation: query api_keys WHERE key_hash = :hash
+        if ($this->pdo !== null) {
+            try {
+                $stmt = $this->pdo->prepare(
+                    'SELECT id, key_prefix, owner_agent_slug, name, scopes, expires_at 
+                     FROM agent_registry.api_keys 
+                     WHERE key_hash = :hash AND (expires_at IS NULL OR expires_at > NOW())'
+                );
+                $stmt->execute(['hash' => $tokenHash]);
+                $key = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$key) {
+                    return $this->unauthorized('Invalid or expired API token');
+                }
+
+                // Update last_used_at timestamp
+                $upd = $this->pdo->prepare('UPDATE agent_registry.api_keys SET last_used_at = NOW() WHERE id = :id');
+                $upd->execute(['id' => $key['id']]);
+
+                $request = $request
+                    ->withAttribute('api_key_id', $key['id'])
+                    ->withAttribute('api_key_owner', $key['owner_agent_slug'])
+                    ->withAttribute('api_key_scopes', json_decode($key['scopes'] ?? '[]', true) ?: []);
+
+            } catch (\Throwable $e) {
+                return $this->unauthorized('Authentication database lookup failed');
+            }
+        }
 
         return $handler->handle($request);
     }

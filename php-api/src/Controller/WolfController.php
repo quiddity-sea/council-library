@@ -25,7 +25,7 @@ class WolfController
     {
         $agent = $request->getAttribute('agent_slug');
         $body = $request->getParsedBody();
-        $wolfId = $args['wolf_id'];
+        $wolfId = $args['wolf_id'] ?? $args['wid'] ?? '';
         $taskId = bin2hex(random_bytes(12));
 
         // Insert into Registry task_queue for Wolf polling
@@ -62,7 +62,8 @@ class WolfController
                     result_json, error_message
              FROM task_queue WHERE task_id = :tid"
         );
-        $stmt->execute(['tid' => $args['task_id']]);
+        $taskId = $args['task_id'] ?? $args['tid'] ?? '';
+        $stmt->execute(['tid' => $taskId]);
         $task = $stmt->fetch();
 
         if (!$task) {
@@ -75,6 +76,7 @@ class WolfController
     public function memoryUpsert(Request $request, Response $response, array $args): Response
     {
         $body = $request->getParsedBody();
+        $wolfId = $args['wolf_id'] ?? $args['wid'] ?? '';
         $stmt = $this->pdo->prepare(
             "INSERT INTO wolf_working_memory
              (wolf_id, namespace, key_name, value_json)
@@ -82,7 +84,7 @@ class WolfController
              ON DUPLICATE KEY UPDATE value_json = VALUES(value_json), updated_at = NOW()"
         );
         $stmt->execute([
-            'wid' => $args['wolf_id'],
+            'wid' => $wolfId,
             'ns'  => $body['namespace'] ?? 'general',
             'key' => $body['key_name'] ?? 'scratch',
             'val' => json_encode($body['value'] ?? []),

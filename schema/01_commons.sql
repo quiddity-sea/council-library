@@ -24,7 +24,7 @@ CREATE TABLE quiddity_vector_references (
     chunk_index INT UNSIGNED NOT NULL,
     chunk_text MEDIUMTEXT NOT NULL,
     chunk_token_count INT UNSIGNED NOT NULL,
-    embedding VECTOR(1024) NOT NULL,
+    embedding VECTOR(384) NOT NULL,
     chunk_metadata JSON NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (file_id) REFERENCES quiddity_files(id) ON DELETE CASCADE,
@@ -41,7 +41,7 @@ CREATE TABLE conversation_vectors (
     message_id BIGINT UNSIGNED NOT NULL,
     role ENUM('user','assistant','system','tool') NOT NULL,
     content_text MEDIUMTEXT NOT NULL,
-    embedding VECTOR(1024) NOT NULL,
+    embedding VECTOR(384) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     KEY idx_agent_session (agent_slug, session_id),
     KEY idx_created (created_at)
@@ -68,7 +68,7 @@ CREATE TABLE ingestion_dead_letter (
 CREATE TABLE quiddity_folder_centroids (
     id SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     folder_name VARCHAR(128) NOT NULL UNIQUE,
-    centroid VECTOR(1024) NOT NULL,
+    centroid VECTOR(384) NOT NULL,
     sample_count INT UNSIGNED NOT NULL,
     rebuilt_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;

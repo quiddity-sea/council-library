@@ -119,7 +119,7 @@ class FolderController
     // ── DELETE /v1/commons/folders/{folder_name} ─────────────
     public function delete(Request $request, Response $response, array $args): Response
     {
-        $folderName = trim($args['folder_name'] ?? '');
+        $folderName = trim($args['folder_name'] ?? $args['name'] ?? '');
 
         if ($folderName === '') {
             return $this->json($response, ['success' => false, 'error' => 'folder_name is required'], 400);
