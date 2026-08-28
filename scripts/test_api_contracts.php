@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $baseUrl = 'http://127.0.0.1:8080';
-$validToken = 'dev-key-change-in-production';
+$validToken = getenv('COUNCIL_TEST_KEY') ?: 'dev-key-change-in-production';
 $invalidToken = 'fake-token-12345';
 
 function req(string $method, string $path, ?array $body = null, ?string $token = null, array $headers = []): array {
