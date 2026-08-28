@@ -8,7 +8,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class ConnectedSitesController
 {
-    public function __construct(private \PDO $pdo, private \Monolog\Logger $logger) {}
+    public function __construct(private \PDO $pdo, private \CouncilLibrary\Core\Logger $logger) {}
 
     public function list(Request $request, Response $response): Response
     {

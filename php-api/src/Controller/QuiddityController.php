@@ -10,11 +10,15 @@ use CouncilLibrary\Service\FolderRouter;
 
 class QuiddityController
 {
+    private VectorSearch $search;
+
     public function __construct(
-        private \PDO             $pdo,
-        private \Monolog\Logger  $logger,
-        private VectorSearch     $search,
-    ) {}
+        private \PDO $pdo,
+        private \CouncilLibrary\Core\Logger $logger,
+        ?VectorSearch $search = null
+    ) {
+        $this->search = $search ?? new VectorSearch($this->pdo);
+    }
 
     // ── GET /v1/commons/files ────────────────────────────────────
     public function listFiles(Request $request, Response $response): Response

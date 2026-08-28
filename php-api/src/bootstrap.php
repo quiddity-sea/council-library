@@ -1,69 +1,48 @@
 <?php
 declare(strict_types=1);
 
-use DI\ContainerBuilder;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Monolog\Processor\UidProcessor;
-use Slim\Factory\AppFactory;
+require_once __DIR__ . '/Core/Autoloader.php';
+\CouncilLibrary\Core\Autoloader::register();
 
-require __DIR__ . '/../vendor/autoload.php';
+// Load .env if present
+$envFile = dirname(__DIR__) . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) continue;
+        if (str_contains($line, '=')) {
+            [$k, $v] = explode('=', $line, 2);
+            $k = trim($k);
+            $v = trim(trim($v), "\"'");
+            $_ENV[$k] = $v;
+            $_SERVER[$k] = $v;
+            putenv("{$k}={$v}");
+        }
+    }
+}
 
-// Load environment
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->safeLoad();
+// Database Connection
+$host = $_ENV['DB_HOST'] ?? 'localhost';
+$user = $_ENV['DB_USER'] ?? 'zeon7';
+$pass = $_ENV['DB_PASS'] ?? '';
+$pdo = new PDO(
+    "mysql:host={$host};dbname=agent_registry;charset=utf8mb4",
+    $user, $pass,
+    [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+    ]
+);
 
-// Build DI container
-$builder = new ContainerBuilder();
-$builder->addDefinitions([
-    // MariaDB PDO connections — one per database
-    PDO::class => function (): PDO {
-        $host = $_ENV['DB_HOST'] ?? 'localhost';
-        $user = $_ENV['DB_USER'] ?? 'zeon7_user';
-        $pass = $_ENV['DB_PASS'] ?? '';
-        return new PDO(
-            "mysql:host={$host};dbname=agent_registry;charset=utf8mb4",
-            $user, $pass,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
-        );
-    },
+// Native Logger
+$logger = new \CouncilLibrary\Core\Logger('council-library', $_ENV['LOG_PATH'] ?? dirname(__DIR__) . '/logs/api.log');
 
-    'quiddity_commons' => function (PDO $pdo): PDO {
-        $pdo->exec('USE quiddity_commons');
-        return $pdo;
-    },
+// Router Setup
+$router = new \CouncilLibrary\Core\Router($pdo, $logger);
 
-    'agent_registry' => function (PDO $pdo): PDO {
-        $pdo->exec('USE agent_registry');
-        return $pdo;
-    },
-
-    Logger::class => function (): Logger {
-        $logger = new Logger('council-library');
-        $logger->pushHandler(new StreamHandler(
-            $_ENV['LOG_PATH'] ?? __DIR__ . '/../logs/api.log',
-            ($_ENV['LOG_LEVEL'] ?? 'DEBUG') === 'DEBUG' ? Logger::DEBUG : Logger::INFO
-        ));
-        $logger->pushProcessor(new UidProcessor());
-        return $logger;
-    },
-
-    CouncilLibrary\Service\VectorSearch::class => function (PDO $pdo): CouncilLibrary\Service\VectorSearch {
-        $pdo->exec('USE quiddity_commons');
-        return new CouncilLibrary\Service\VectorSearch($pdo);
-    },
-
-    CouncilLibrary\Service\EmbeddingClient::class => function (): CouncilLibrary\Service\EmbeddingClient {
-        $url = $_ENV['EMBEDDING_URL'] ?? 'http://127.0.0.1:8900';
-        return new CouncilLibrary\Service\EmbeddingClient($url);
-    },
-
-    CouncilLibrary\Controller\ConnectedSitesController::class => function (PDO $pdo, Monolog\Logger $logger): CouncilLibrary\Controller\ConnectedSitesController {
-        return new CouncilLibrary\Controller\ConnectedSitesController($pdo, $logger);
-    },
-]);
-
-$container = $builder->build();
-AppFactory::setContainer($container);
-return $container;
+return [
+    'pdo'    => $pdo,
+    'logger' => $logger,
+    'router' => $router
+];

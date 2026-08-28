@@ -8,7 +8,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class IngestionController
 {
-    public function __construct(private \PDO $pdo, private \Monolog\Logger $logger) {}
+    public function __construct(private \PDO $pdo, private \CouncilLibrary\Core\Logger $logger) {}
 
     public function batch(Request $request, Response $response): Response
     {

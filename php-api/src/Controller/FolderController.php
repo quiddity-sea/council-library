@@ -9,11 +9,11 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 class FolderController
 {
     private \PDO $pdo;
-    private \Monolog\Logger $logger;
+    private \CouncilLibrary\Core\Logger $logger;
     private string $configPath;
     private string $quiddityRoot;
 
-    public function __construct(\PDO $pdo, \Monolog\Logger $logger)
+    public function __construct(\PDO $pdo, \CouncilLibrary\Core\Logger $logger)
     {
         $this->pdo = $pdo;
         $this->logger = $logger;

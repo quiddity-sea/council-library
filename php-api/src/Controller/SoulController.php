@@ -9,9 +9,9 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 class SoulController
 {
     private \PDO $pdo;
-    private \Monolog\Logger $logger;
+    private \CouncilLibrary\Core\Logger $logger;
 
-    public function __construct(\PDO $pdo, \Monolog\Logger $logger)
+    public function __construct(\PDO $pdo, \CouncilLibrary\Core\Logger $logger)
     {
         $this->pdo = $pdo;
         $this->logger = $logger;

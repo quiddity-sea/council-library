@@ -1,10 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Factory\AppFactory;
-use Slim\Routing\RouteCollectorProxy;
+use CouncilLibrary\Core\Request;
+use CouncilLibrary\Core\Response;
 use CouncilLibrary\Controller\{
     SoulController, MemoryController, ConversationController,
     WolfController, QuiddityController, IngestionController,
@@ -12,60 +10,35 @@ use CouncilLibrary\Controller\{
     AssignmentController, AgentCatalogueController
 };
 
-$container = require __DIR__ . '/../src/bootstrap.php';
-AppFactory::setContainer($container);
-$app = AppFactory::create();
+$app = require __DIR__ . '/../src/bootstrap.php';
+$pdo = $app['pdo'];
+$logger = $app['logger'];
+$router = $app['router'];
 
-$app->add(\CouncilLibrary\Middleware\Auth::class);
-$app->add(\CouncilLibrary\Middleware\AgentContext::class);
-$app->add(\CouncilLibrary\Middleware\PrivilegedActionGate::class);
-$app->addBodyParsingMiddleware();
-$app->addRoutingMiddleware();
-$app->addErrorMiddleware(true, true, true);
+// Attach Middleware pipeline
+$router->addMiddleware(new \CouncilLibrary\Middleware\Auth($pdo));
+$router->addMiddleware(new \CouncilLibrary\Middleware\AgentContext($pdo));
+$router->addMiddleware(new \CouncilLibrary\Middleware\PrivilegedActionGate());
 
-function resolveSanctumDb(string $agent): string {
-    $map = [
-        'zeon7'     => 'agent_curator',
-        'curator'   => 'agent_curator',
-        'leon'      => 'agent_producer',
-        'producer'  => 'agent_producer',
-        'gemma'     => 'agent_coach',
-        'coach'     => 'agent_coach',
-        'otec'      => 'agent_director',
-        'director'  => 'agent_director',
-        'wolf'      => 'agent_wolf',
-    ];
-    return $map[strtolower($agent)] ?? ('agent_' . $agent);
-}
-
-// Shortcut: resolve controller from container, switch to agent's Sanctum
-function c(string $class, string $method): callable {
-    return function (Request $req, Response $res, array $args = []) use ($class, $method) {
-        $agent = $req->getAttribute('agent_slug') ?? 'curator';
-        $sanctum = resolveSanctumDb($agent);
-        $pdo = $this->get(PDO::class);
-        try { 
-            $pdo->exec("USE `{$sanctum}`"); 
-        } catch (\PDOException $e) {}
-        $ctrl = $this->get($class);
-        return $ctrl->$method($req, $res, $args);
-    };
+// Controller resolver helper
+function c(string $class, string $method): array {
+    return [$class, $method];
 }
 
 // ── Health ──────────────────────────────────────────────────
-$app->get('/v1/healthz', function (Request $req, Response $res): Response {
+$router->get('/v1/healthz', function (Request $req, Response $res): Response {
     $res->getBody()->write(json_encode(['status' => 'ok']));
     return $res->withHeader('Content-Type', 'application/json');
 });
 
-$app->get('/v1/readyz', function (Request $req, Response $res): Response {
-    $this->get(PDO::class)->query('SELECT 1');
+$router->get('/v1/readyz', function (Request $req, Response $res) use ($pdo): Response {
+    $pdo->query('SELECT 1');
     $res->getBody()->write(json_encode(['status' => 'ready', 'db' => 'connected']));
     return $res->withHeader('Content-Type', 'application/json');
 });
 
 // ── Sanctum ─────────────────────────────────────────────────
-$app->group('/v1/sanctum', function (RouteCollectorProxy $s) {
+$router->group('/v1/sanctum', function ($s) {
     $s->get('/soul', c(SoulController::class, 'get'));
     $s->put('/soul', c(SoulController::class, 'upsert'));
     $s->get('/user-context', c(SoulController::class, 'getUserContext'));
@@ -96,7 +69,7 @@ $app->group('/v1/sanctum', function (RouteCollectorProxy $s) {
 });
 
 // ── Commons ─────────────────────────────────────────────────
-$app->group('/v1/commons', function (RouteCollectorProxy $c) {
+$router->group('/v1/commons', function ($c) {
     $c->get('/files', c(QuiddityController::class, 'listFiles'));
     $c->post('/files/sync', c(QuiddityController::class, 'sync'));
     $c->get('/files/{id}/chunks', c(QuiddityController::class, 'chunks'));
@@ -113,14 +86,14 @@ $app->group('/v1/commons', function (RouteCollectorProxy $c) {
 });
 
 // ── Director ────────────────────────────────────────────────
-$app->group('/v1/director', function (RouteCollectorProxy $d) {
+$router->group('/v1/director', function ($d) {
     $d->post('/plans', c(DirectorController::class, 'createPlan'));
     $d->post('/directives', c(DirectorController::class, 'issueDirective'));
     $d->get('/status', c(DirectorController::class, 'globalStatus'));
 });
 
 // ── Registry ────────────────────────────────────────────────
-$app->group('/v1/registry', function (RouteCollectorProxy $r) {
+$router->group('/v1/registry', function ($r) {
     $r->get('/budget', c(SoulController::class, 'getBudget'));
     $r->post('/privileged-actions', c(SoulController::class, 'requestPrivileged'));
     $r->get('/privileged-actions/{id}', c(SoulController::class, 'getPrivileged'));
@@ -147,4 +120,6 @@ $app->group('/v1/registry', function (RouteCollectorProxy $r) {
     $r->get('/models', c(AgentCatalogueController::class, 'listModels'));
 });
 
-$app->run();
+// Dispatch current request
+$request = Request::fromGlobals();
+$router->dispatch($request);

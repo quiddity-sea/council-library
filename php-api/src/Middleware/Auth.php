@@ -7,7 +7,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface as Handler;
-use Slim\Psr7\Response as SlimResponse;
+use CouncilLibrary\Core\Response as NativeResponse;
 use PDO;
 
 class Auth implements MiddlewareInterface
@@ -79,7 +79,7 @@ class Auth implements MiddlewareInterface
 
     private function unauthorized(string $message): Response
     {
-        $res = new SlimResponse(401);
+        $res = new NativeResponse(401);
         $res->getBody()->write(json_encode([
             'success' => false,
             'error' => ['code' => 'UNAUTHORIZED', 'message' => $message]

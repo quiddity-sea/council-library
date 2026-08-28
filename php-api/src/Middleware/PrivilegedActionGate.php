@@ -7,7 +7,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface as Handler;
-use Slim\Psr7\Response as SlimResponse;
+use CouncilLibrary\Core\Response as NativeResponse;
 
 class PrivilegedActionGate implements MiddlewareInterface
 {
@@ -65,7 +65,7 @@ class PrivilegedActionGate implements MiddlewareInterface
             'code' => $code,
         ]);
 
-        $res = new SlimResponse(412);
+        $res = new NativeResponse(412);
         $res->getBody()->write(json_encode([
             'success' => false,
             'error' => [
