@@ -71,8 +71,10 @@ $router->group('/v1/sanctum', function ($s) {
 // ── Commons ─────────────────────────────────────────────────
 $router->group('/v1/commons', function ($c) {
     $c->get('/files', c(QuiddityController::class, 'listFiles'));
+    $c->post('/files/upload', c(IngestionController::class, 'upload'));
     $c->post('/files/sync', c(QuiddityController::class, 'sync'));
     $c->get('/files/{id}/chunks', c(QuiddityController::class, 'chunks'));
+    $c->delete('/files/{id}', c(QuiddityController::class, 'deleteFile'));
     $c->get('/search', c(QuiddityController::class, 'search'));
     $c->get('/folders', c(FolderController::class, 'list'));
     $c->put('/folders', c(FolderController::class, 'upsert'));

@@ -262,6 +262,39 @@ class QuiddityController
         ]);
     }
 
+    // ── DELETE /v1/commons/files/{id} ────────────────────────────
+    public function deleteFile(Request $request, Response $response, array $args): Response
+    {
+        $this->ensureCommons();
+        $fileId = (int) ($args['id'] ?? $args['fid'] ?? 0);
+
+        $stmt = $this->pdo->prepare('SELECT id, relative_path FROM quiddity_files WHERE id = :id');
+        $stmt->execute(['id' => $fileId]);
+        $file = $stmt->fetch();
+
+        if (!$file) {
+            return $this->json($response, ['success' => false, 'error' => 'File not found'], 404);
+        }
+
+        $rootDir = '/foreverbox_data/Quiddity_Lore_Sea';
+        $fullPath = $rootDir . '/' . ltrim($file['relative_path'], '/');
+        if (file_exists($fullPath)) {
+            @unlink($fullPath);
+        }
+
+        $this->pdo->prepare('DELETE FROM quiddity_files WHERE id = :id')->execute(['id' => $fileId]);
+
+        $this->logger->info('quiddity_file_deleted', [
+            'file_id'       => $fileId,
+            'relative_path' => $file['relative_path']
+        ]);
+
+        return $this->json($response, [
+            'success' => true,
+            'deleted' => $file['relative_path']
+        ]);
+    }
+
     // ── Private ──────────────────────────────────────────────────
 
     /**
