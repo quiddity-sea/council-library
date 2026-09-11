@@ -1,4 +1,4 @@
-﻿# Council Library — Sovereign Memory Architecture & Cognitive Router
+# Council Library — Sovereign Memory Architecture & Cognitive Router
 
 [![System Status](https://img.shields.io/badge/System-ACTIVE-00f2fe?style=for-the-badge&logo=cpu)](https://foreverbox.co.uk)
 [![PHP](https://img.shields.io/badge/PHP-8.3_Slim_4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net)
@@ -56,6 +56,8 @@ council-library/
 │   └── src/
 │       ├── Controller/                # Core Endpoints
 │       │   ├── FolderController.php   # Commons Directory & File Operations
+│       │   ├── IngestionController.php# Upload & Batch Ingestion Operations
+│       │   ├── QuiddityController.php # Commons Listing, Sync, Search & File Deletion
 │       │   ├── MemoryController.php   # Sanctum Memory & Lore CRUD
 │       │   ├── WolfController.php     # Task Queue, Worker Claim & Status
 │       │   ├── SoulController.php     # Dynamic SOUL Component Retrieval
@@ -66,13 +68,16 @@ council-library/
 │       │   ├── AgentContextMiddleware.php # Resolves & Isolates Agent DB Context
 │       │   └── PrivilegedActionGate.php   # Enforces Sudo Confirmation Tokens
 │       └── Service/                   # Business Logic & Vector Math
+│           ├── IngestionService.php   # Reusable Chunking, Embedding & Auto-start Service
+│           ├── VectorSearch.php       # Hybrid Cosine & FULLTEXT Search Engine
+│           └── FolderRouter.php       # Semantic Taxonomy & Folder Classifier
 │
 ├── router/                            # Cognitive Router V3
 │   ├── __init__.py                    # CognitiveRouter Core Evaluation Engine
 │   └── router.yaml                    # Model Tier Profiles & Agent Overrides
 │
 ├── scripts/                           # Workers, Embedding & Migrations
-│   ├── embedding_service.py           # FastAPI / Sentence-Transformers (:8900)
+│   ├── embedding_service.py           # HTTP Sentence-Transformers (:8900)
 │   ├── ingestion_worker.php           # Document Chunker & Indexing Daemon
 │   ├── generate_folder_centroids.py  # Calculates Semantic Domain Clusters
 │   └── migrate_all.sql                # Complete Schema Setup for All 7 DBs
@@ -116,10 +121,16 @@ sudo mysql -u root -p < scripts/migrate_all.sql
 ```
 
 ### 2. Launching Background Microservices
-Start the embedding microservice on port 8900:
+The embedding microservice runs as a systemd daemon (`council-embedding.service`) on port 8900:
 ```bash
-source /foreverbox_data/venv/bin/activate
-python3 scripts/embedding_service.py --port 8900 &
+sudo systemctl enable --now council-embedding.service
+sudo systemctl status council-embedding.service
+```
+
+Manual execution for debugging:
+```bash
+source /foreverbox_data/council-venv/bin/activate
+python3 scripts/embedding_service.py --port 8900
 ```
 
 Start the document ingestion worker daemon:
@@ -127,20 +138,25 @@ Start the document ingestion worker daemon:
 php scripts/ingestion_worker.php --daemon &
 ```
 
-### 3. Running the Slim 4 REST API
-Configure an Apache or Nginx virtual host pointing to `php-api/public`, or run the built-in server for testing:
+### 3. Running the REST API
+The Council REST API runs on port 8080 (systemd unit: `council-api.service`):
 ```bash
-cd /foreverbox_data/council-library/php-api
-php -S 127.0.0.1:8080 -t public
+sudo systemctl status council-api.service
 ```
 
 ### 4. API Endpoints Quick Reference
 
 | Method | Route | Description | Auth Required |
 |---|---|---|---|
+| `POST`| `/v1/commons/files/upload` | Multipart file upload to Quiddity Lore Sea with inline 384-dim vector ingestion | Bearer Token |
+| `GET` | `/v1/commons/files` | List all files in the Quiddity Lore Sea and their indexing status | Bearer Token |
+| `DELETE`| `/v1/commons/files/{id}` | Delete document from Lore Sea filesystem and cascade delete vector chunks | Bearer Token |
+| `POST`| `/v1/commons/files/sync` | Reconcile disk files with DB records | Bearer Token |
+| `POST`| `/v1/commons/ingest/batch` | Trigger batch / explicit re-ingestion on file IDs | Bearer Token |
+| `GET` | `/v1/commons/search` | Hybrid semantic vector + FULLTEXT search over Quiddity Lore Sea | Bearer Token |
+| `GET` | `/v1/commons/folders` | List taxonomy folders and domain centroid clusters | Bearer Token |
 | `GET` | `/v1/memory/search` | Semantic vector search in active agent's Sanctum | Bearer Token + Agent Context |
 | `POST`| `/v1/memory` | Store persistent memory or lore fact | Bearer Token + Agent Context |
-| `GET` | `/v1/commons/search` | Search shared Quiddity knowledge repository | Bearer Token |
 | `POST`| `/v1/wolf/tasks` | Dispatch parallel background research task | Bearer Token |
 | `POST`| `/v1/wolf/tasks/claim` | Atomic worker task claim (`SKIP LOCKED`) | Bearer Token |
 | `POST`| `/v1/sudo/request` | Generate cryptographic confirmation token | Bearer Token |
@@ -152,11 +168,18 @@ php -S 127.0.0.1:8080 -t public
 require_once '/path/to/CouncilClient.php';
 
 $council = new CouncilClient(
-    baseUrl: 'http://127.0.0.1:8080',
+    baseUrl: 'http://100.126.174.30:8080',
     apiKey: 'your_council_api_key'
 );
 
-// Query Commons with semantic search
+// Upload a markdown file directly to Quiddity Lore Sea with automatic vector embeddings
+$uploadResult = $council->uploadToCommons(
+    tmpFilePath: '/tmp/spec.md',
+    filename: 'spec.md',
+    subfolder: '06_QuiddityLtd_Dev_Specs'
+);
+
+// Query Commons with hybrid vector search
 $results = $council->searchCommons("Origin of the 2037 Dead Earth timeline");
 
 // Log conversation turn to active agent sanctum

@@ -179,24 +179,27 @@ All endpoints require `Authorization: Bearer ***` and `X-Agent-ID: <slug>` heade
 | GET | `/sanctum/user-context` | Get the USER.md mirror |
 | PUT | `/sanctum/user-context` | Update USER.md mirror |
 
-### Commons — Files
+### Commons — Files & Ingestion Pipeline
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/commons/files` | List indexed files |
-| POST | `/commons/files/sync` | Scan and register files |
-| GET | `/commons/files/{id}/chunks` | Get chunks for a specific file |
-| GET | `/commons/search?query=` | Hybrid vector + FULLTEXT search across all Commons |
+| POST | `/v1/commons/files/upload` | Multipart file upload (`.md`, `.txt`, `.pdf`) directly to Quiddity Lore Sea filesystem with inline 384-dim dense vector embedding & classification |
+| GET | `/v1/commons/files` | List indexed files and their indexing status (`indexed`, `pending`, `processing`, `failed`) |
+| GET | `/v1/commons/files/{id}/chunks` | Get vector chunks and embeddings for a specific file |
+| DELETE | `/v1/commons/files/{id}` | Delete physical file from Lore Sea and cascade delete vector chunks |
+| POST | `/v1/commons/files/sync` | Scan filesystem and register new/modified files in `quiddity_files` |
+| POST | `/v1/commons/ingest/batch` | Trigger batch / explicit re-ingestion on file IDs via `IngestionService` |
+| GET | `/v1/commons/search?q=` | Hybrid vector (cosine similarity) + FULLTEXT search across all Commons |
 
 ### Commons — Folders
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/commons/folders` | List all folders with centroid metadata |
-| PUT | `/commons/folders` | Upsert a folder (requires Sudo Protocol) |
-| DELETE | `/commons/folders/{name}` | Delete a folder (requires Sudo Protocol) |
-| POST | `/commons/folders/reclassify` | Move a file to a specific folder |
-| POST | `/commons/folders/rebuild-centroids` | Rebuild all folder centroid vectors |
+| GET | `/v1/commons/folders` | List all folders with centroid metadata |
+| PUT | `/v1/commons/folders` | Upsert a folder (requires Sudo Protocol) |
+| DELETE | `/v1/commons/folders/{name}` | Delete a folder (requires Sudo Protocol) |
+| POST | `/v1/commons/folders/reclassify` | Move a file to a specific folder |
+| POST | `/v1/commons/folders/rebuild-centroids` | Rebuild all folder centroid vectors |
 
 ### Registry
 
